@@ -22,36 +22,36 @@ async function main() {
   const products = [
     {
       name: 'Double Beat',
-      description: 'Dois hambúrgueres bovinos, queijo derretido, bacon crocante, cebola e tomate no pão com gergelim.',
-      price: 38.00,
+      description: '2 Carnes, alface, tomate, cheddar, cebola, bacon, picles e molho especial.',
+      price: 25.00,
       image: '/img/double-beat.jpg',
       categoryId: burgerCat.id // Relacionando com o ID real
     },
     {
       name: 'Beat Mirim',
-      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
-      price: 28.00,
-      image: '/img/beat-mirim.jpg',
+      description: '1 Carne, alface, tomate, queijo, ketchup, mostarda e maionese.',
+      price: 12.00,
+      image: '/img/beat-mirim.jpeg',
       categoryId: burgerCat.id,
     },
     {
       name: 'Furacão 2000',
-      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
-      price: 28.00,
+      description: '1 Carne, alface, tomate, milho, ovo, cheddar, cebola, bacon e molho especial.',
+      price: 22.00,
       image: '/img/furacao-2000.jpeg',
       categoryId: burgerCat.id
     },
     {
       name: 'Big Fild',
-      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
-      price: 28.00,
+      description: '3 Carnes, cheddar e bacon.',
+      price: 27.00,
       image: '/img/big-fild.jpeg',
       categoryId: burgerCat.id
     },
     {
       name: 'Big Monster',
-      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
-      price: 28.00,
+      description: '4 Carnes, cheddar e bacon, alface, tomate e molho billy jack.',
+      price: 37.00,
       image: '/img/big-monster.jpeg',
       categoryId: burgerCat.id
     },
