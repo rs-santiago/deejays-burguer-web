@@ -3,10 +3,17 @@ import { ref, computed, watch } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
 
 // Fetch dos produtos da nossa API Prisma
-const [{ data: products }, { data: categoriesData }] = await Promise.all([
+const [
+  { data: products, pending: productsPending, error: productsError }, 
+  { data: categoriesData, pending: catsPending, error: catsError }
+] = await Promise.all([
   useFetch('/api/products'),
   useFetch('/api/categories')
 ])
+
+// Criamos variáveis unificadas para o template não reclamar
+const pending = computed(() => productsPending.value || catsPending.value)
+const error = computed(() => productsError.value || catsError.value)
 
 // Filtros
 const selectedCategory = ref('all')

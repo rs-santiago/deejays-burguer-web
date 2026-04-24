@@ -8,22 +8,23 @@ datasource db {
 }
 
 model Category {
-  id       String    @id @default(uuid())
-  name     String
-  slug     String    @unique
-  products Product[] // Lado "Um" da relação
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  isAvailable Boolean   @default(true)
+  products    Product[] // Lado "Um" da relação
 }
 
 model Product {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String
   price       Float
   image       String
-
+  isAvailable Boolean  @default(true)
   // Configuração da Relação
-  category   Category @relation(fields: [categoryId], references: [id])
-  categoryId String // Chave estrangeira que conecta ao ID da Category
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String // Chave estrangeira que conecta ao ID da Category
 
   createdAt DateTime @default(now())
 }

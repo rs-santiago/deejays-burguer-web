@@ -20,7 +20,7 @@
 
     <div class="p-8 -mt-10 relative z-10">
       <span class="text-amber-500/60 font-black uppercase text-[9px] tracking-[0.3em] mb-2 block">
-        {{ product.category }}
+        {{ product.category.name }}
       </span>
 
       <h3 class="text-2xl font-title uppercase italic tracking-tighter text-white mb-3 group-hover:text-amber-500 transition-colors leading-none">

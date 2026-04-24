@@ -28,10 +28,31 @@ async function main() {
       categoryId: burgerCat.id // Relacionando com o ID real
     },
     {
-      name: 'Double Beat Mirim',
+      name: 'Beat Mirim',
       description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
       price: 28.00,
-      image: '/img/double-beat-mirim.jpg',
+      image: '/img/beat-mirim.jpg',
+      categoryId: burgerCat.id,
+    },
+    {
+      name: 'Furacão 2000',
+      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
+      price: 28.00,
+      image: '/img/furacao-2000.jpeg',
+      categoryId: burgerCat.id
+    },
+    {
+      name: 'Big Fild',
+      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
+      price: 28.00,
+      image: '/img/big-fild.jpeg',
+      categoryId: burgerCat.id
+    },
+    {
+      name: 'Big Monster',
+      description: 'A versão compacta do nosso campeão, com milho e todo o sabor do original.',
+      price: 28.00,
+      image: '/img/big-monster.jpeg',
       categoryId: burgerCat.id
     },
     {
