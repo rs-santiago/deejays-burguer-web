@@ -142,7 +142,7 @@ watch(products, (val) => {
             O <span class="text-white font-bold">Deejays Burguer</span> nasceu da união entre a precisão das batidas e a arte da culinária artesanal. Não fazemos apenas lanches, criamos experiências sensoriais onde cada ingrediente é uma nota no beat perfeito.
           </p>
           <p class="text-neutral-500">
-            Localizados em Ananindeua, trazemos a essência urbana e o rigor da qualidade para o seu paladar. Se o som é bom, o sabor tem que ser inesquecível.
+            Localizados em Guadalupe, trazemos a essência urbana e o rigor da qualidade para o seu paladar. Se o som é bom, o sabor tem que ser inesquecível.
           </p>
           <div class="grid grid-cols-2 gap-4 pt-4">
             <div class="border border-white/10 p-4 rounded-xl">
