@@ -176,15 +176,17 @@ watch(products, (val) => {
                 </div>
               </a>
 
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center">
-                  <span class="text-amber-500">IG</span>
+              <a href="https://www.instagram.com/deejaysburg" target="_blank" class="flex items-center gap-4 group">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center group-hover:bg-amber-500 transition-colors">
+                    <span class="text-amber-500 group-hover:text-black">IG</span>
+                  </div>
+                  <div>
+                    <span class="block text-xs uppercase text-neutral-500 font-bold">Instagram</span>
+                    <span class="text-white">@deejaysburguer</span>
+                  </div>
                 </div>
-                <div>
-                  <span class="block text-xs uppercase text-neutral-500 font-bold">Instagram</span>
-                  <span class="text-white">@deejaysburguer</span>
-                </div>
-              </div>
+              </a>
             </div>
           </div>
 
