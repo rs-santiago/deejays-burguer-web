@@ -3,22 +3,25 @@ import { ref, computed, watch } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
 
 // Fetch dos produtos da nossa API Prisma
-const { data: products, pending, error } = await useFetch('/api/products')
+const [{ data: products }, { data: categoriesData }] = await Promise.all([
+  useFetch('/api/products'),
+  useFetch('/api/categories')
+])
 
 // Filtros
 const selectedCategory = ref('all')
-const categories = [
-  { id: 'all', name: 'Todos' },
-  { id: 'burger', name: 'Burguers' },
-  { id: 'hotdog', name: 'Hot Dogs' }
-]
+
+const categories = computed(() => {
+  const dynamicCats = categoriesData.value?.map(c => ({ id: c.slug, name: c.name })) || []
+  return [{ id: 'all', name: 'Todos' }, ...dynamicCats]
+})
 
 // Lógica de filtragem reativa
 const filteredProducts = computed(() => {
   if (!products.value) return []
   if (selectedCategory.value === 'all') return products.value
   return products.value.filter(p => 
-    p.category.toLowerCase() === selectedCategory.value.toLowerCase()
+    p.category.slug.toLowerCase() === selectedCategory.value.toLowerCase()
   )
 })
 
@@ -126,7 +129,7 @@ watch(products, (val) => {
       <div class="grid md:grid-cols-2 gap-16 items-center">
         <div class="relative">
           <NuxtImg 
-            src="/img/hero-burger.jpg" 
+            src="/img/hero-burger.png" 
             class="rounded-[3rem] grayscale hover:grayscale-0 transition-all duration-700 shadow-2xl"
           />
           <div class="absolute -bottom-6 -right-6 bg-amber-500 p-8 rounded-2xl hidden md:block">

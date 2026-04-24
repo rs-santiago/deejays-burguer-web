@@ -7,13 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Category {
+  id       String    @id @default(uuid())
+  name     String
+  slug     String    @unique
+  products Product[] // Lado "Um" da relação
+}
+
 model Product {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String @id @default(uuid())
+  name        String
   description String
   price       Float
   image       String
-  category    String   // Ex: 'burger', 'hotdog', 'drink'
-  isAvailable Boolean  @default(true)
-  createdAt   DateTime @default(now())
+
+  // Configuração da Relação
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String // Chave estrangeira que conecta ao ID da Category
+
+  createdAt DateTime @default(now())
 }
