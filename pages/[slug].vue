@@ -128,7 +128,7 @@ const filteredProducts = computed(() => {
         <div class="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" :style="{ borderColor: brand.colors.primary, borderTopColor: 'transparent' }"></div>
       </div>
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        <ProductCard v-for="item in filteredProducts" :key="item.id" :product="item" :themeColor="brand.colors.primary" />
+        <ProductCard v-for="item in filteredProducts" :key="item.id" :product="item" :brand="brand" :themeColor="brand.colors.primary" />
       </div>
     </section>
 

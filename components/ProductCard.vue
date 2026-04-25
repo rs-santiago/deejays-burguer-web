@@ -19,7 +19,7 @@
     </div>
 
     <div class="p-8 -mt-10 relative z-10">
-      <span class="text-amber-500/60 font-black uppercase text-[9px] tracking-[0.3em] mb-2 block">
+      <span class="text-amber-500/90 font-black uppercase text-[13px] tracking-[0.3em] mb-2 block">
         {{ product.category.name }}
       </span>
 
@@ -35,26 +35,32 @@
          <span class="text-amber-500 font-title">R$ {{ product.price }}</span>
       </div>
       <button 
-        @click="orderNow(product.name)"
-        class="group/btn relative w-full overflow-hidden bg-amber-500/10 border border-amber-500/20 py-4 rounded-2xl transition-all duration-500 hover:bg-amber-500 active:scale-95"
+        @click="orderNow(product.name, brand)"
+        class="group/btn relative w-full overflow-hidden py-4 rounded-2xl transition-all duration-500 active:scale-95"
+        :style="{ 
+          backgroundColor: `${brand.colors.primary}1A`, // 1A adiciona 10% de opacidade no hex
+          borderColor: `${brand.colors.primary}33`   // 33 adiciona 20% de opacidade
+        }"
+        @mouseover="(e) => e.currentTarget.style.backgroundColor = brand.colors.primary"
+        @mouseleave="(e) => e.currentTarget.style.backgroundColor = `${brand.colors.primary}1A`"
       >
-        <div class="relative z-10 flex items-center justify-center gap-2 text-amber-500 group-hover/btn:text-black font-title uppercase text-[11px] tracking-[0.25em] transition-colors duration-300">
+        <div class="relative z-10 flex items-center justify-center gap-2 font-title uppercase text-[11px] tracking-[0.25em] group-hover/btn:text-black"
+            :style="{ color: brand.colors.primary }">
           <span>Lançar Pedido</span>
-          <span class="text-xl leading-none group-hover/btn:translate-x-1 transition-transform">→</span>
+          <span>→</span>
         </div>
-
-        <div class="absolute inset-0 bg-gradient-to-r from-amber-600 to-amber-400 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 ease-out"></div>
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-defineProps(['product'])
+defineProps(['product', 'brand'])
 
-const orderNow = (name) => {
-  const phone = "5521994295096" 
-  const msg = encodeURIComponent(`🎧 Fala Deejays! Solta o beat desse lanche pra mim: ${name}`)
+const orderNow = (productName, brand) => {
+  const phone = brand.contact.whatsapp
+  const greeting = `Olá, ${brand.name} ${brand.surname}!`
+  const msg = encodeURIComponent(`${greeting} Gostaria de pedir: ${productName}`)
   window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
 }
 </script>
