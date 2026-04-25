@@ -6,10 +6,6 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Deejays Burguer - Sabor, Qualidade e Atitude',
-      meta: [
-        { name: 'description', content: 'A melhor hamburgueria artesanal da região.' }
-      ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

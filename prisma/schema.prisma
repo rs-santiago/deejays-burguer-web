@@ -7,24 +7,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Brand {
+  id      String @id @default(uuid())
+  slug    String @unique
+  name    String
+  surname String
+  tagline String
+
+  // Hero Section
+  heroTitle       String
+  heroHighlight   String
+  heroDescription String
+  heroImage       String
+
+  // About Section
+  aboutTitle       String
+  aboutHighlight   String
+  since            String
+  aboutDescription String
+  aboutSubText     String
+  features         String[] // Prisma suporta arrays em PostgreSQL. Se usar MySQL/SQLite, use String separada por vírgula.
+
+  // Contact
+  whatsapp        String
+  whatsappDisplay String
+  instagram       String
+  instaLink       String
+  location        String
+
+  // Design
+  colorPrimary      String
+  colorPrimaryHover String
+  colorBg           String
+
+  categories Category[]
+  products   Product[]
+}
+
 model Category {
   id          String    @id @default(uuid())
   name        String
-  slug        String    @unique
+  slug        String
+  brandId     String // FK para Brand
   isAvailable Boolean   @default(true)
   products    Product[] // Lado "Um" da relação
+  brand       Brand     @relation(fields: [brandId], references: [id])
+
+  @@unique([slug, brandId]) // Garante que a slug seja única dentro daquela marca
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String
   price       Float
   image       String
-  isAvailable Boolean  @default(true)
-  // Configuração da Relação
-  category    Category @relation(fields: [categoryId], references: [id])
-  categoryId  String // Chave estrangeira que conecta ao ID da Category
+  isAvailable Boolean @default(true)
+
+  brand      Brand    @relation(fields: [brandId], references: [id])
+  brandId    String // Chave estrangeira que conecta ao ID da Brand
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String // Chave estrangeira que conecta ao ID da Category
 
   createdAt DateTime @default(now())
 }

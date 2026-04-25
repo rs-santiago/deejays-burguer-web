@@ -1,7 +1,12 @@
 export default defineEventHandler(async (event) => {
-    try {
+  try {
+    const query = getQuery(event)
+    const brandId = query.brandId as string
+    if (!brandId) {
+      throw createError({ statusCode: 400, message: 'Brand ID is required' })
+    }
     const products = await prisma.product.findMany({
-      where: { isAvailable: true },
+      where: { isAvailable: true, brandId },
       include: { category: true },
     })
     return products
