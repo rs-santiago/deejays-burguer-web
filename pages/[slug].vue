@@ -27,11 +27,13 @@ useHead({
   ]
 })
 
-useServerSeoMeta({
+useSeoMeta({
   title: () => brand.value ? `${brand.value.name} ${brand.value.surname} - ${brand.value.tagline}` : 'Carregando...',
   ogTitle: () => brand.value ? `${brand.value.name} ${brand.value.surname} - ${brand.value.tagline}` : 'Carregando...',
   description: () => brand.value?.hero.description,
+  ogDescription: () => brand.value?.heroDescription,
   ogImage: () => brand.value?.hero.image,
+  twitterCard: 'summary_large_image',
 })
 
 // 3. Busca de Produtos e Categorias em paralelo usando o ID da marca carregada
