@@ -1,3 +1,8 @@
+enum Role {
+  ADMIN
+  SUPER_ADMIN
+}
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -42,6 +47,7 @@ model Brand {
 
   categories Category[]
   products   Product[]
+  user  User?
 }
 
 model Category {
@@ -70,4 +76,19 @@ model Product {
   categoryId String // Chave estrangeira que conecta ao ID da Category
 
   createdAt DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Aqui guardaremos o HASH, nunca a senha real
+  name      String?
+  role      Role     @default(ADMIN)
+  
+  // Relação com a Marca
+  brand     Brand?   @relation(fields: [brandId], references: [id])
+  brandId   String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
