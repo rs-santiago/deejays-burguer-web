@@ -1,6 +1,15 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-04-24',
-  modules: ['@nuxtjs/tailwindcss', '@nuxt/image', '@nuxt/fonts'],
+  modules: [
+    '@nuxtjs/tailwindcss', 
+    '@nuxt/image', 
+    '@nuxt/fonts',
+    '@pinia/nuxt',
+    'pinia-plugin-persistedstate/nuxt',
+  ],
+  pinia: {
+    storesDirs: ['./stores/**'],
+  },
   typescript: {
     strict: true
   },

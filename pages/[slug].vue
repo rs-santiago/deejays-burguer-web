@@ -1,9 +1,12 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
+import CartSummary from '../components/CartSummary.vue'
+import CartModal from '../components/CartModal.vue'
 
 const route = useRoute()
 const slug = route.params.slug
+const cart = useCartStore()
 const showScheduleModal = ref(false)
 
 // 1. Busca os dados da Marca
@@ -11,6 +14,14 @@ const { data: brand, pending: brandPending, error } = await useFetch(`/api/brand
   key: `brand-${slug}`,
   watch: [slug] 
 })
+
+// Sincroniza o ID da marca com o Store para gerenciar o carrinho correto
+watch(brand, (newVal) => {
+  if (newVal?.id) {
+    cart.setActiveBrand(newVal.id)
+  }
+}, { immediate: true })
+
 
 if (!brand.value || error.value) {
   await navigateTo('/', { replace: true })
@@ -86,11 +97,16 @@ const filteredProducts = computed(() => {
   if (selectedCategory.value === 'all') return products.value
   return products.value.filter(p => p.category.slug.toLowerCase() === selectedCategory.value.toLowerCase())
 })
+// No final do script, garanta o fechamento do modal ao trocar de página
+onUnmounted(() => {
+  cart.isModalOpen = false
+})
 </script>
 
 <template>
   <div v-if="brand" class="min-h-screen text-white font-sans scroll-smooth" :style="{ backgroundColor: brand.colors.bg }">
-    
+    <CartSummary />
+    <CartModal :brand="brand" />
     <div v-if="!isStoreOpen" class="bg-red-600 text-center py-2 text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-[70] shadow-2xl">
       Loja fechada no momento • Apenas consulta
     </div>
