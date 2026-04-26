@@ -9,11 +9,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Categoria não encontrada.' })
   }
 
-  if (user.role === 'ADMIN' && category.brandId !== user.brandId) {
+  // Verifica se o ADMIN é dono da marca da categoria
+  if (user.role === 'ADMIN' && !user.brandIds.includes(category.brandId)) {
     throw createError({ statusCode: 403, message: 'Acesso negado.' })
   }
 
   await prisma.category.delete({ where: { id } })
 
-  return { message: 'Categoria removida.' }
-})  
+  return { message: 'Categoria removida com sucesso.' }
+})
