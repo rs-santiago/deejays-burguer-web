@@ -31,7 +31,7 @@ model Brand {
   since            String
   aboutDescription String
   aboutSubText     String
-  features         String[] // Prisma suporta arrays em PostgreSQL. Se usar MySQL/SQLite, use String separada por vírgula.
+  features         String[] // Prisma suporta arrays em PostgreSQL
 
   // Contact
   whatsapp        String
@@ -47,7 +47,9 @@ model Brand {
 
   categories Category[]
   products   Product[]
-  user  User?
+  
+  // 1. RELAÇÃO ATUALIZADA: Uma marca pode ser gerenciada por vários usuários
+  users      UserBrandAccess[]
 }
 
 model Category {
@@ -57,7 +59,8 @@ model Category {
   brandId     String // FK para Brand
   isAvailable Boolean   @default(true)
   products    Product[] // Lado "Um" da relação
-  brand       Brand     @relation(fields: [brandId], references: [id])
+  
+  brand       Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@unique([slug, brandId]) // Garante que a slug seja única dentro daquela marca
 }
@@ -65,14 +68,14 @@ model Category {
 model Product {
   id          String  @id @default(uuid())
   name        String
-  description String
+  description String? // Coloquei opcional com '?' baseado na nossa alteração anterior
   price       Float
-  image       String?
+  image       String? // Opcional para o upload de imagem
   isAvailable Boolean @default(true)
 
-  brand      Brand    @relation(fields: [brandId], references: [id])
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   brandId    String // Chave estrangeira que conecta ao ID da Brand
-  category   Category @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId String // Chave estrangeira que conecta ao ID da Category
 
   createdAt DateTime @default(now())
@@ -85,10 +88,23 @@ model User {
   name      String?
   role      Role     @default(ADMIN)
   
-  // Relação com a Marca
-  brand     Brand?   @relation(fields: [brandId], references: [id])
-  brandId   String?  @unique
+  // 2. RELAÇÃO ATUALIZADA: Um usuário pode ter acesso a várias marcas
+  brands    UserBrandAccess[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// 3. NOVA TABELA: O "coração" do sistema Multi-Loja
+model UserBrandAccess {
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId    String
+
+  assignedAt DateTime @default(now())
+
+  // A chave primária é composta pelos dois IDs. 
+  // Isso garante que um usuário não seja adicionado duas vezes à mesma loja.
+  @@id([userId, brandId]) 
 }

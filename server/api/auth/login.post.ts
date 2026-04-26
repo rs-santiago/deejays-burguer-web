@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
   // 1. Busca o usuário
   const user = await prisma.user.findUnique({
     where: { email },
+    include: { brands: true }
   })
 
   if (!user) {
@@ -23,11 +24,16 @@ export default defineEventHandler(async (event) => {
   // 3. Prepara a chave secreta para o 'jose'
   const secret = new TextEncoder().encode(process.env.JWT_SECRET)
 
+  let userBrandIds: string[] = []
+  if (user.role !== 'SUPER_ADMIN') {
+    userBrandIds = user.brands.map(b => b.brandId)
+  }
+
   // 4. Gera o Token
-  const token = await new SignJWT({ 
-    userId: user.id, 
-    role: user.role, 
-    brandId: user.brandId 
+  const token = await new SignJWT({
+    userId: user.id,
+    role: user.role,
+    brandIds: userBrandIds
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -36,6 +42,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     token,
-    user: { name: user.name, email: user.email, role: user.role }
+    user: { name: user.name, email: user.email, role: user.role, brandIds: userBrandIds }
   }
 })
