@@ -16,7 +16,10 @@ export default defineEventHandler(async (event) => {
   requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
 
   // 2. Prepara o Formidable para ler o arquivo do request
-  const form = formidable({ multiples: false })
+  const form = formidable({ 
+    multiples: false,
+    keepExtensions: true // Ajuda a manter a extensão do arquivo
+  })
 
   try {
     // 3. Processa o parse da requisição de forma assíncrona
