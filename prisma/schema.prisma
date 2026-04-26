@@ -36,6 +36,7 @@ model Brand {
   products          Product[]
   users             UserBrandAccess[]
   schedules         OpeningHours[]    // Nova relação de horários
+  orders            Order[]
 }
 
 model OpeningHours {
@@ -46,6 +47,27 @@ model OpeningHours {
   closed    Boolean @default(false)
   brandId   String
   brand     Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  phone     String   @unique // O telefone será o identificador único
+  name      String
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  status          String   @default("PENDING") // PENDING, PREPARING, SHIPPED, DELIVERED, CANCELLED
+  total           Float
+  items           Json     // Salva o snapshot dos itens do carrinho
+  customerPhone   String
+  customer        Customer @relation(fields: [customerPhone], references: [phone])
+  brandId         String
+  brand           Brand    @relation(fields: [brandId], references: [id])
+  createdAt       DateTime @default(now())
 }
 
 model Category {

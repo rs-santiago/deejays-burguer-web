@@ -17,8 +17,11 @@ export const useCartStore = defineStore('cart', {
   state: () => ({
     carts: {} as MultiCart,
     customerPhone: '',
+    customerName: '',
     isModalOpen: false,
-    activeBrandId: '', 
+    activeBrandId: '',
+    isHistoryOpen: false,
+    orderHistory: [] as any[],
   }),
 
   getters: {
@@ -27,11 +30,11 @@ export const useCartStore = defineStore('cart', {
       if (!state.activeBrandId) return []
       return state.carts[state.activeBrandId] || []
     },
-    
+
     totalItems(): number {
       return this.currentCartItems.reduce((acc, item) => acc + item.quantity, 0)
     },
-    
+
     totalPrice(): number {
       return this.currentCartItems.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0)
     },
@@ -45,6 +48,47 @@ export const useCartStore = defineStore('cart', {
   actions: {
     setActiveBrand(id: string) {
       this.activeBrandId = id
+    },
+
+    async fetchHistory() {
+      if (!this.customerPhone) return
+
+      try {
+        const data = await $fetch('/api/orders/history', {
+          query: { phone: this.customerPhone.replace(/\D/g, '') }
+        })
+        this.orderHistory = data
+      } catch (error) {
+        console.error('Erro ao buscar histórico:', error)
+      }
+    },
+
+    logout() {
+      this.customerPhone = ''
+      this.customerName = ''
+      this.orderHistory = []
+      this.isHistoryOpen = false
+      this.carts[this.activeBrandId] = []
+    },
+
+    repeatOrder(items: any[]) {
+      if (!this.activeBrandId) return
+
+      // 1. Limpamos o carrinho atual da loja para não dar confusão
+      this.carts[this.activeBrandId] = []
+
+      // 2. Adicionamos os itens do histórico
+      // Note que mapeamos para garantir a estrutura do CartItem
+      this.carts[this.activeBrandId] = items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price),
+        quantity: item.quantity
+      }))
+
+      // 3. Fechamos o modal de histórico e abrimos o do carrinho para ele ver
+      this.isHistoryOpen = false
+      this.isModalOpen = true
     },
 
     addToCart(product: any) {
@@ -80,7 +124,7 @@ export const useCartStore = defineStore('cart', {
       if (!targetCart) return
 
       const index = targetCart.findIndex(i => i.id === productId)
-      
+
       if (index > -1) {
         const item = targetCart[index]
         if (item && item.quantity > 1) {
