@@ -15,6 +15,10 @@ export default defineEventHandler(async (event) => {
   // Segurança: Só admin faz upload
   requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
 
+  // LOG DE DEBUG: Vamos ver o que está vindo no Header
+  const contentType = getHeader(event, 'content-type')
+  console.log('Content-Type recebido:', contentType)
+
   // 2. Prepara o Formidable para ler o arquivo do request
   const form = formidable({ 
     multiples: false,
