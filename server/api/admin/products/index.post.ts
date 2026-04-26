@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       name,
       description,
       price: parseFloat(price),
-      image,
+      image: image || "",
       isAvailable: true,
       categoryId,
       brandId: finalBrandId
