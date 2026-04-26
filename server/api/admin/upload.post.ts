@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
       )
       stream.end(file.data)
     })
-
+    console.log('Upload Response:', uploadResponse);
     return { url: (uploadResponse as any).secure_url }
 
   } catch (error: any) {
