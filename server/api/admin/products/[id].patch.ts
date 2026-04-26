@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     where: { id },
     data: {
       price: body.price,
-      available: body.available,
+      isAvailable: body.isAvailable,
     },
   });
 
