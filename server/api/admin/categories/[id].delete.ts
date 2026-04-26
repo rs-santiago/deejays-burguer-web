@@ -14,6 +14,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Acesso negado.' })
   }
 
+  // 1. Verificar se existem produtos vinculados
+  const productsCount = await prisma.product.count({
+    where: { categoryId: id }
+  })
+
+  if (productsCount > 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Não é possível excluir. Esta categoria possui ${productsCount} produtos vinculados, apague todos e depois exclua a categoria.`
+    })
+  }
+
+  
   await prisma.category.delete({ where: { id } })
 
   return { message: 'Categoria removida com sucesso.' }
