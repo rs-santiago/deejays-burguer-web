@@ -10,9 +10,9 @@
 
     <div class="h-72 overflow-hidden">
       <NuxtImg 
-        :src="product.image || '/images/default-product.png'"
+        :src="product.image || '/img/default-product.png'"
         :alt="product.name"
-        @error="(e) => e.target.src = '/images/default-product.png'"
+        @error="(e) => e.target.src = '/img/default-product.png'"
         format="webp"
         class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
       />
