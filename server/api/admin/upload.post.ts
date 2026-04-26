@@ -13,53 +13,39 @@ cloudinary.config({
 })
 
 export default defineEventHandler(async (event) => {
-  // Segurança: Só admin faz upload
   requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
 
-  // LOG DE DEBUG: Vamos ver o que está vindo no Header
-  const contentType = getHeader(event, 'content-type')
-  console.log('Content-Type recebido:', contentType)
+  // 1. Lê o corpo multipart de forma nativa
+  const formData = await readMultipartFormData(event)
 
-  // 2. Prepara o Formidable para ler o arquivo do request
-  const form = formidable({ 
-    multiples: false,
-    uploadDir: os.tmpdir(),
-    keepExtensions: true // Ajuda a manter a extensão do arquivo
-  })
+  if (!formData) {
+    throw createError({ statusCode: 400, message: 'Nenhuma imagem enviada.' })
+  }
+
+  // 2. Procura pelo campo 'image'
+  const file = formData.find((item) => item.name === 'image')
+
+  if (!file || !file.data) {
+    throw createError({ statusCode: 400, message: 'Campo image não encontrado.' })
+  }
 
   try {
-    // 3. Processa o parse da requisição de forma assíncrona
-    const data = await new Promise<{ fields: formidable.Fields; files: formidable.Files }>(
-      (resolve, reject) => {
-        form.parse(event.node.req, (err, fields, files) => {
-          if (err) reject(err)
-          resolve({ fields, files })
-        })
-      }
-    )
-
-    // 4. Pega o arquivo de imagem
-    const file = data.files.image as formidable.File | undefined
-    if (!file || Array.isArray(file)) {
-      throw createError({ statusCode: 400, message: 'Nenhuma imagem enviada.' })
-    }
-
-    // 5. Faz o upload para o Cloudinary usando a rota do arquivo temporário
-    const uploadResponse = await cloudinary.uploader.upload(file.filepath, {
-      folder: 'menuflow/products', // Organiza em pastas no Cloudinary
-      resource_type: 'image'
+    // 3. Upload direto para o Cloudinary usando o Buffer (sem precisar de arquivo temporário)
+    const uploadResponse = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'menuflow/products' },
+        (error, result) => {
+          if (error) reject(error)
+          else resolve(result)
+        }
+      )
+      stream.end(file.data)
     })
 
-    // 6. Retorna a URL segura gerada
-    return {
-      url: uploadResponse.secure_url
-    }
+    return { url: (uploadResponse as any).secure_url }
 
-  } catch (error) {
-    console.error('Erro no upload:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Falha ao processar upload da imagem.'
-    })
+  } catch (error: any) {
+    console.error('Erro Cloudinary:', error)
+    throw createError({ statusCode: 500, message: 'Erro ao subir para nuvem.' })
   }
 })
