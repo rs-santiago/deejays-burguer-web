@@ -2,6 +2,7 @@
 import { v2 as cloudinary } from 'cloudinary'
 import formidable from 'formidable'
 import fs from 'fs'
+import os from 'os'
 
 // 1. Configura o Cloudinary com suas credenciais
 cloudinary.config({
@@ -22,6 +23,7 @@ export default defineEventHandler(async (event) => {
   // 2. Prepara o Formidable para ler o arquivo do request
   const form = formidable({ 
     multiples: false,
+    uploadDir: os.tmpdir(),
     keepExtensions: true // Ajuda a manter a extensão do arquivo
   })
 
