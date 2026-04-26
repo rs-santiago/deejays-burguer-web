@@ -1,16 +1,32 @@
+// server/api/admin/products/[id].patch.ts
 export default defineEventHandler(async (event) => {
-  requireRole(event, ['ADMIN', 'SUPER_ADMIN']);
-  const id = getRouterParam(event, 'id');
-  const body = await readBody(event);
+  const user = requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
+  const id = getRouterParam(event, 'id')
+  const body = await readBody(event)
 
-  // Atualiza apenas o que foi enviado (ex: price ou available)
-  const product = await prisma.product.update({
+  // 1. Busca o produto para verificar a propriedade
+  const product = await prisma.product.findUnique({
+    where: { id }
+  })
+
+  if (!product) {
+    throw createError({ statusCode: 404, message: 'Produto não encontrado.' })
+  }
+
+  // 2. Trava de segurança: ADMIN só edita o que é dele
+  if (user.role === 'ADMIN' && product.brandId !== user.brandId) {
+    throw createError({ statusCode: 403, message: 'Você não tem permissão para editar este produto.' })
+  }
+
+  // 3. Update
+  const updatedProduct = await prisma.product.update({
     where: { id },
     data: {
-      price: body.price,
-      isAvailable: body.isAvailable,
-    },
-  });
+      ...body,
+      // Garante que o preço seja número se ele vier no body
+      price: body.price ? parseFloat(body.price) : undefined 
+    }
+  })
 
-  return product;
-});
+  return updatedProduct
+})
