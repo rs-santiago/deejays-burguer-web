@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue' // Adicionado onUnmounted aqui
 import ProductCard from '../components/ProductCard.vue'
 import CartSummary from '../components/CartSummary.vue'
 import CartModal from '../components/CartModal.vue'
@@ -9,6 +9,29 @@ const route = useRoute()
 const slug = route.params.slug
 const cart = useCartStore()
 const showScheduleModal = ref(false)
+
+// ------------------------------------------------------------------
+// NOVO: VALIDAÇÃO DE HORÁRIO DA CATEGORIA (JSON activeTime)
+// ------------------------------------------------------------------
+const isCategoryOpen = (activeTime) => {
+  if (!activeTime || !Array.isArray(activeTime) || activeTime.length === 0) return true
+
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const currentTime = now.getHours() * 100 + now.getMinutes()
+
+  const today = activeTime.find(item => item.day === dayOfWeek)
+  if (!today) return false
+
+  const open = parseInt(today.open.replace(':', ''), 10)
+  const close = parseInt(today.close.replace(':', ''), 10)
+
+  if (close < open) { // Horário que vira a noite
+    return currentTime >= open || currentTime <= close
+  }
+  return currentTime >= open && currentTime <= close
+}
+// ------------------------------------------------------------------
 
 // 1. Busca os dados da Marca
 const { data: brand, pending: brandPending, error } = await useFetch(`/api/brand/${slug}`, {
@@ -64,7 +87,7 @@ const getDayName = (dayIndex) => {
 const handleOpenHistory = async () => {
   // 1. Busca os dados no banco (usando o telefone que já está no Pinia)
   await cart.fetchHistory()
-  
+
   // 2. Abre o modal
   cart.isHistoryOpen = true
 }
@@ -106,16 +129,32 @@ const [{ data: products, pending: productsPending }, { data: categoriesData, pen
 const pending = computed(() => productsPending.value || catsPending.value)
 const selectedCategory = ref('all')
 
+// --- ALTERADO: CATEGORIAS FILTRADAS POR HORÁRIO ---
 const categories = computed(() => {
-  const dynamic = categoriesData.value?.map(c => ({ id: c.slug, name: c.name })) || []
-  return [{ id: 'all', name: 'Todos' }, ...dynamic]
+  const dynamic = categoriesData.value
+    ?.filter(c => c.isActive && isCategoryOpen(c.activeTime))
+    ?.map(c => ({
+      id: c.slug,
+      name: c.name,
+      icon: c.icon, // Puxa o Emoji/Ícone do banco
+      isHighlight: c.isHighlight // Puxa a flag de destaque
+    })) || []
+  return [{ id: 'all', name: 'Todos', icon: '🍽️' }, ...dynamic]
 })
 
+// --- ALTERADO: PRODUTOS FILTRADOS PELA CATEGORIA ABERTA ---
 const filteredProducts = computed(() => {
   if (!products.value) return []
-  if (selectedCategory.value === 'all') return products.value
-  return products.value.filter(p => p.category.slug.toLowerCase() === selectedCategory.value.toLowerCase())
+
+  // Filtra apenas produtos de categorias que estão "abertas" no momento
+  const availableNow = products.value.filter(p => {
+    return p.category.isActive && isCategoryOpen(p.category.activeTime)
+  })
+
+  if (selectedCategory.value === 'all') return availableNow
+  return availableNow.filter(p => p.category.slug.toLowerCase() === selectedCategory.value.toLowerCase())
 })
+
 // No final do script, garanta o fechamento do modal ao trocar de página
 onUnmounted(() => {
   cart.isModalOpen = false
@@ -212,9 +251,19 @@ const openHistory = async () => {
       </div>
       <div class="flex flex-wrap justify-center gap-3 mb-16">
         <button v-for="cat in categories" :key="cat.id" @click="selectedCategory = cat.id"
-          class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border"
-          :style="selectedCategory === cat.id ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' } : { backgroundColor: 'transparent', borderColor: '#262626', color: '#737373' }">
+          class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2"
+          :style="selectedCategory === cat.id
+            ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' }
+            : (cat.isHighlight
+              ? { backgroundColor: `${brand.colors.primary}15`, borderColor: brand.colors.primary, color: brand.colors.primary } // Estilo destaque quando não selecionado
+              : { backgroundColor: 'transparent', borderColor: '#262626', color: '#737373' }
+            )">
+
+          <span v-if="cat.icon" class="text-sm">{{ cat.icon }}</span>
+
           {{ cat.name }}
+
+          <span v-if="cat.isHighlight && selectedCategory !== cat.id" class="w-1 h-1 rounded-full bg-current"></span>
         </button>
       </div>
       <div v-if="pending" class="flex justify-center py-20">
