@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
 
       return {
         id: order.id,
-        displayId: order.displayId.toString().padStart(4, '0'), // Formata como #0001, #0002...
+        displayId: order.displayId.toString().padStart(5, '0'), // Formata como #0001, #0002...
         customerName: order.customerName,
         total: order.total,
         status: order.status,
