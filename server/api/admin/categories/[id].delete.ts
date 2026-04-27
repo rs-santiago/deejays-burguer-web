@@ -1,4 +1,5 @@
-// server/api/admin/categories/[id].delete.ts
+import { prisma } from '~/server/utils/prisma'
+
 export default defineEventHandler(async (event) => {
   const user = requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
   const id = getRouterParam(event, 'id')
@@ -25,7 +26,6 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Não é possível excluir. Esta categoria possui ${productsCount} produtos vinculados, apague todos e depois exclua a categoria.`
     })
   }
-
   
   await prisma.category.delete({ where: { id } })
 

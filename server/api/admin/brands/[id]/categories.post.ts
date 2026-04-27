@@ -1,8 +1,12 @@
-// server/api/admin/brands/[id]/categories.post.ts
+import { prisma } from '~/server/utils/prisma'
+
 export default defineEventHandler(async (event) => {
   const user = requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
   const brandId = getRouterParam(event, 'id')
-  const { name } = await readBody(event)
+  const body = await readBody(event)
+  
+  // Extraímos os novos campos também
+  const { name, icon, isActive, isHighlight, activeTime } = body
 
   if (!brandId) {
     throw createError({
@@ -23,11 +27,25 @@ export default defineEventHandler(async (event) => {
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
 
+  // Descobrir a última posição para colocar a nova no fim da fila
+  const lastCategory = await prisma.category.findFirst({
+    where: { brandId },
+    orderBy: { sortOrder: 'desc' },
+    select: { sortOrder: true }
+  })
+
+  const nextOrder = (lastCategory?.sortOrder ?? -1) + 1
+
   const category = await prisma.category.create({
     data: {
       name,
       slug,
-      brandId
+      brandId,
+      sortOrder: nextOrder,
+      icon: icon || null,
+      isActive: isActive ?? true, // Se não for enviado, padrão é ativo
+      isHighlight: isHighlight ?? false,
+      activeTime: activeTime || null
     }
   })
 

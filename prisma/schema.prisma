@@ -72,6 +72,10 @@ model Order {
   customerName  String?   
   customerPhone String
   
+  deliveryMethod String? // Pode ser 'delivery' ou 'pickup'
+  paymentMethod  String? // 'PIX', 'CARTÃO', 'DINHEIRO'
+  address        String?
+
   customer      Customer @relation(fields: [customerPhone], references: [phone])
   brandId       String
   brand         Brand    @relation(fields: [brandId], references: [id])
@@ -93,6 +97,14 @@ model Category {
   name        String
   slug        String
   brandId     String
+  
+  icon        String?   // Para emojis ou nomes de ícones
+  sortOrder   Int       @default(0) // Para a ordenação
+  isActive    Boolean   @default(true) // Switch de visibilidade geral
+  isHighlight Boolean   @default(false) // Categoria "Destaque"
+  
+  activeTime  Json?
+
   isAvailable Boolean   @default(true)
   brand       Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
   products    Product[]
