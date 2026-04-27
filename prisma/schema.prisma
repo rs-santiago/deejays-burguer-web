@@ -59,15 +59,33 @@ model Customer {
 }
 
 model Order {
-  id              String   @id @default(uuid())
-  status          String   @default("PENDING") // PENDING, PREPARING, SHIPPED, DELIVERED, CANCELLED
-  total           Float
-  items           Json     // Salva o snapshot dos itens do carrinho
-  customerPhone   String
-  customer        Customer @relation(fields: [customerPhone], references: [phone])
-  brandId         String
-  brand           Brand    @relation(fields: [brandId], references: [id])
-  createdAt       DateTime @default(now())
+  id            String   @id @default(uuid())
+  // displayId: Um número sequencial ou aleatório curto para a cozinha. 
+  // No Prisma/Postgres, você pode usar um Int Autoincrement ou gerar via código no Nuxt.
+  displayId     Int      @default(autoincrement()) 
+  
+  status        String   @default("PENDING") // PENDING, PREPARING, DISPATCHED, DELIVERED, CANCELLED
+  total         Float
+  
+  // Salva o snapshot para o lojista ver rápido sem precisar de joins pesados
+  items         Json     
+  customerName  String?   
+  customerPhone String
+  
+  customer      Customer @relation(fields: [customerPhone], references: [phone])
+  brandId       String
+  brand         Brand    @relation(fields: [brandId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt @default(now()) // Adicione um default temporário
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  DISPATCHED
+  DELIVERED
+  CANCELLED
 }
 
 model Category {
