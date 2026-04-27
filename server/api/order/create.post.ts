@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { sendPushNotification } from '~/server/utils/pushNotifications'
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
@@ -10,9 +11,9 @@ export default defineEventHandler(async (event) => {
     const customer = await prisma.customer.upsert({
       where: { phone: customerPhone },
       update: { name: customerName }, // Atualiza o nome caso ele tenha mudado
-      create: { 
-        phone: customerPhone, 
-        name: customerName 
+      create: {
+        phone: customerPhone,
+        name: customerName
       },
     })
 
@@ -25,6 +26,19 @@ export default defineEventHandler(async (event) => {
         customerPhone: customer.phone,
       },
     })
+
+    const adminUser = await prisma.user.findFirst({
+      where: { brands: { some: { brandId: brandId } } }
+    });
+
+    if (adminUser?.pushToken) {
+      await sendPushNotification(
+        adminUser.pushToken,
+        '🍕 Novo Pedido!',
+        `O pedido #${order.displayId} acaba de chegar.`,
+        { orderId: order.id }
+      );
+    }
 
     return { success: true, orderId: order.id }
   } catch (error) {

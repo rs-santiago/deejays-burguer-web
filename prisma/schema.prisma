@@ -122,6 +122,7 @@ model User {
   role      Role              @default(ADMIN)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
+  pushToken String?
   brands    UserBrandAccess[]
 }
 
