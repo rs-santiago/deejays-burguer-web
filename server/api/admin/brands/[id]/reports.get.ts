@@ -1,59 +1,41 @@
 import { prisma } from '~/server/utils/prisma'
-import { startOfDay, endOfDay } from 'date-fns'
+import { startOfDay, endOfDay, subDays, differenceInMinutes } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
   const brandId = getRouterParam(event, 'id')
   const now = new Date()
+  const thirtyDaysAgo = subDays(now, 30)
 
-  const [ordersToday, totalSales, topProducts] = await Promise.all([
-    // Hoje
+  const [orders30Days, totalCustomers] = await Promise.all([
     prisma.order.findMany({
-      where: { brandId, createdAt: { gte: startOfDay(now), lte: endOfDay(now) } },
-      select: { total: true, status: true, items: true }
+      where: { brandId, createdAt: { gte: thirtyDaysAgo }, status: 'DELIVERED' },
+      select: { total: true, createdAt: true, updatedAt: true, customerPhone: true }
     }),
-    // Geral
-    prisma.order.aggregate({
-      where: { brandId, status: 'DELIVERED' },
-      _sum: { total: true },
-      _count: { id: true }
-    }),
-    // TOP Produtos (Baseado nos últimos 30 dias para ter volume)
-    prisma.order.findMany({
-      where: { brandId, status: 'DELIVERED' },
-      take: 50, // Pega os últimos 50 pedidos para análise
-      select: { items: true }
-    })
+    prisma.customer.count() // Total de clientes na base
   ])
 
-  // Lógica para Rankear Produtos (Processando o JSON de itens)
-  const productCount: Record<string, number> = {}
-  topProducts.forEach(order => {
-    const items = Array.isArray(order.items) ? order.items : []
-    items.forEach((item: any) => {
-      productCount[item.name] = (productCount[item.name] || 0) + (item.quantity || 1)
-    })
+  // 1. Cálculo de Eficiência (Tempo Médio de Cozinha)
+  const deliveryTimes = orders30Days.map(o => differenceInMinutes(new Date(o.updatedAt), new Date(o.createdAt)))
+  const avgPrepTime = deliveryTimes.length > 0 
+    ? deliveryTimes.reduce((a, b) => a + b, 0) / deliveryTimes.length 
+    : 0
+
+  // 2. Fidelização (Clientes Recorrentes nos últimos 30 dias)
+  const customerOrders: Record<string, number> = {}
+  orders30Days.forEach(o => {
+    customerOrders[o.customerPhone] = (customerOrders[o.customerPhone] || 0) + 1
   })
-
-  const rankedProducts = Object.entries(productCount)
-    .map(([name, qty]) => ({ name, qty }))
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5)
-
-  const revenueToday = ordersToday
-    .filter(o => o.status !== 'CANCELLED')
-    .reduce((acc, curr) => acc + curr.total, 0)
+  const recurringCustomers = Object.values(customerOrders).filter(count => count > 1).length
 
   return {
-    today: {
-      revenue: revenueToday,
-      count: ordersToday.length,
-      cancelled: ordersToday.filter(o => o.status === 'CANCELLED').length,
-      averageTicket: ordersToday.length > 0 ? revenueToday / ordersToday.length : 0
+    efficiency: {
+      avgPrepTime: Math.round(avgPrepTime),
+      status: avgPrepTime < 20 ? 'EXCELENTE' : avgPrepTime < 35 ? 'NORMAL' : 'LENTO'
     },
-    total: {
-      revenue: totalSales._sum.total || 0,
-      count: totalSales._count.id || 0
-    },
-    topProducts: rankedProducts
+    loyalty: {
+      recurringCount: recurringCustomers,
+      newCount: Object.keys(customerOrders).length - recurringCustomers,
+      rate: orders30Days.length > 0 ? (recurringCustomers / Object.keys(customerOrders).length) * 100 : 0
+    }
   }
 })
