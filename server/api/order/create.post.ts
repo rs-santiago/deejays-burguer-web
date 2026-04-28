@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
         items: items, // O carrinho (JSON)
         brandId: brandId,
         customerPhone: customer.phone,
+        customerName: customer.name,
       },
     })
 
