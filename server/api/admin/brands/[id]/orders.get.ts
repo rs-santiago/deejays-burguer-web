@@ -51,6 +51,7 @@ export default defineEventHandler(async (event) => {
         status: true,
         items: true, 
         createdAt: true,
+        is_printed: true
       },
       orderBy: {
         createdAt: 'desc',
@@ -68,6 +69,7 @@ export default defineEventHandler(async (event) => {
         id: order.id,
         displayId: order.displayId.toString().padStart(5, '0'),
         customerName: order.customerName,
+        is_printed: order.is_printed,
         total: Number(order.total), // Garante que retorne como número
         status: order.status,
         createdAt: order.createdAt,
