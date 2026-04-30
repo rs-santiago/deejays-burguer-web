@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Mesma trava de segurança do Patch
-  if (user.role === 'ADMIN' && product.brandId !== user.brandId) {
+  if (user.role === 'ADMIN' && !user.brandIds.includes(product.brandId)) {
     throw createError({ statusCode: 403, message: 'Ação não permitida.' })
   }
 

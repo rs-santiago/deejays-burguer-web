@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 2. Trava de segurança: ADMIN só edita o que é dele
-  if (user.role === 'ADMIN' && product.brandId !== user.brandId) {
+  if (user.role === 'ADMIN' && !user.brandIds.includes(product.brandId)) {
     throw createError({ statusCode: 403, message: 'Você não tem permissão para editar este produto.' })
   }
 
