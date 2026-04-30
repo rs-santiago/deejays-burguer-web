@@ -66,6 +66,7 @@ model Order {
   
   status        String   @default("PENDING") // PENDING, PREPARING, DISPATCHED, DELIVERED, CANCELLED
   total         Float
+  is_printed    Boolean  @default(false)
   
   // Salva o snapshot para o lojista ver rápido sem precisar de joins pesados
   items         Json     
