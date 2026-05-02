@@ -1,10 +1,13 @@
 import { defineStore } from 'pinia'
 
+// 1. Atualizamos a interface para aceitar os novos campos
 interface CartItem {
   id: string
+  cartItemId: string // Adicionado: Identificador único para a linha no carrinho
   name: string
   price: number
   quantity: number
+  observation?: string // Adicionado: Observações do cliente
 }
 
 interface MultiCart {
@@ -77,13 +80,15 @@ export const useCartStore = defineStore('cart', {
       // 1. Limpamos o carrinho atual da loja para não dar confusão
       this.carts[this.activeBrandId] = []
 
-      // 2. Adicionamos os itens do histórico
-      // Note que mapeamos para garantir a estrutura do CartItem
+      // 2. Adicionamos os itens do histórico com suporte a observação
       this.carts[this.activeBrandId] = items.map(item => ({
         id: item.id,
+        // Gera um ID único rápido para não dar conflito na listagem
+        cartItemId: Date.now().toString() + Math.random().toString(36).substring(2, 7), 
         name: item.name,
         price: Number(item.price),
-        quantity: item.quantity
+        quantity: item.quantity,
+        observation: item.observation || '' // Garante que a observação seja puxada
       }))
 
       // 3. Fechamos o modal de histórico e abrimos o do carrinho para ele ver
@@ -100,30 +105,38 @@ export const useCartStore = defineStore('cart', {
         this.carts[brandId] = []
       }
 
-      // Usamos o '!' pois garantimos a existência acima
       const targetCart = this.carts[brandId]!
-      const existing = targetCart.find(i => i.id === product.id)
+      
+      // 3. NOVA LÓGICA DE BUSCA: Confere o ID e a Observação
+      const observationFormatada = product.observation ? product.observation.trim() : ''
+      const existing = targetCart.find(i => i.id === product.id && (i.observation || '') === observationFormatada)
 
       if (existing) {
-        existing.quantity++
+        // Se existir o exato mesmo produto com a mesma observação, soma a quantidade que veio do modal
+        existing.quantity += (product.quantity || 1)
       } else {
+        // Se for diferente, cria uma nova linha no carrinho
         targetCart.push({
           id: product.id,
+          cartItemId: product.cartItemId || (Date.now().toString() + Math.random().toString(36).substring(2, 7)),
           name: product.name,
           price: Number(product.price),
-          quantity: 1
+          quantity: product.quantity || 1,
+          observation: observationFormatada
         })
       }
     },
 
-    removeFromCart(productId: string) {
+    // 4. ATUALIZADO: Agora removemos usando o cartItemId para não deletar a variação errada
+    removeFromCart(cartItemId: string) {
       const brandId = this.activeBrandId
       if (!brandId) return
 
       const targetCart = this.carts[brandId]
       if (!targetCart) return
 
-      const index = targetCart.findIndex(i => i.id === productId)
+      // Encontra a linha específica do carrinho
+      const index = targetCart.findIndex(i => i.cartItemId === cartItemId)
 
       if (index > -1) {
         const item = targetCart[index]

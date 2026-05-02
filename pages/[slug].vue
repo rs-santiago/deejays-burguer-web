@@ -4,11 +4,28 @@ import ProductCard from '../components/ProductCard.vue'
 import CartSummary from '../components/CartSummary.vue'
 import CartModal from '../components/CartModal.vue'
 import CustomerHistory from '../components/CustomerHistory.vue'
+import ProductModal from '../components/ProductModal.vue' // <-- 1. Importado aqui
 
 const route = useRoute()
 const slug = route.params.slug
 const cart = useCartStore()
 const showScheduleModal = ref(false)
+
+// CONTROLE DO MODAL DE PRODUTOS <-- 2. Estados adicionados
+const isProductModalOpen = ref(false)
+const selectedProduct = ref(null)
+
+const openProductModal = (product) => {
+  // Opcional: Impede de abrir o modal se a loja estiver fechada
+  if (!isStoreOpen.value) return 
+  
+  selectedProduct.value = product
+  isProductModalOpen.value = true
+}
+
+const handleAddToCart = (cartItem) => {
+  cart.addToCart(cartItem)
+}
 
 // CONTROLE DE ABAS E MENU
 const activeTab = ref('menu') 
@@ -93,15 +110,25 @@ const menuByCategories = computed(() => {
 onUnmounted(() => { 
   cart.isModalOpen = false 
   cart.isHistoryOpen = false
+  isProductModalOpen.value = false
 })
 </script>
 
 <template>
   <div v-if="brand" class="min-h-screen text-white font-sans scroll-smooth flex flex-col overflow-x-hidden" :style="{ backgroundColor: brand.colors.bg }">
     
+    <!-- MODAIS E COMPONENTES GLOBAIS -->
     <CartSummary />
     <CartModal :brand="brand" :isStoreOpen="isStoreOpen" />
     <CustomerHistory :isStoreOpen="isStoreOpen" />
+    
+    <!-- 4. Novo Modal de Produto Injetado Aqui -->
+    <ProductModal 
+      :isOpen="isProductModalOpen" 
+      :product="selectedProduct" 
+      @close="isProductModalOpen = false"
+      @add-to-cart="handleAddToCart"
+    />
     
     <div v-if="!isStoreOpen" class="bg-red-600 text-center py-2 text-[10px] font-black uppercase tracking-[0.2em] sticky top-0 z-[70] shadow-2xl">
       Loja fechada no momento • Apenas consulta
@@ -183,13 +210,23 @@ onUnmounted(() => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              <ProductCard v-for="product in category.products" :key="product.id" :product="product" :brand="brand" :themeColor="brand.colors.primary" :disabled="!isStoreOpen" />
+              <!-- 5. Evento de clique adicionado no Card -->
+              <ProductCard 
+                v-for="product in category.products" 
+                :key="product.id" 
+                :product="product" 
+                :brand="brand" 
+                :themeColor="brand.colors.primary" 
+                :disabled="!isStoreOpen" 
+                @click="openProductModal(product)"
+                class="cursor-pointer"
+              />
             </div>
           </section>
         </div>
       </div>
 
-      <!-- ABA 2: INFO (SOBRE E CONTATO RESTAURADOS) -->
+      <!-- ABA 2: INFO -->
       <div v-if="activeTab === 'info'" class="w-full">
         <!-- SEÇÃO SOBRE -->
         <section class="max-w-7xl mx-auto px-6 py-24">

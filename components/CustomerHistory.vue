@@ -3,13 +3,13 @@
     <transition name="fade">
       <div v-if="cart.isHistoryOpen"
         class="fixed inset-0 bg-black/95 z-[100] flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-neutral-900 w-full max-w-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative flex flex-col max-h-[90vh]">
+        <div class="bg-neutral-900 w-full max-w-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative flex flex-col max-h-[90vh] min-h-[60vh]">
 
-          <button @click="cart.isHistoryOpen = false"
-            class="absolute top-6 right-6 text-neutral-500 hover:text-white transition-colors">✕</button>
+          <button @click="closeModal"
+            class="absolute top-6 right-6 text-neutral-500 hover:text-white transition-colors z-20">✕</button>
 
-          <!-- ESTADO: DESLOGADO -->
-          <div v-if="!cart.customerPhone" class="py-6">
+          <!-- ESTADO 1: DESLOGADO -->
+          <div v-if="!cart.customerPhone" class="py-6 flex-1 flex flex-col justify-center">
             <h3 class="text-xl font-black uppercase italic mb-4 tracking-tighter">
               Acessar <span class="text-amber-500">Pedidos</span>
             </h3>
@@ -27,112 +27,208 @@
             </div>
           </div>
 
-          <!-- ESTADO: LOGADO -->
-          <div v-else class="flex flex-col h-full overflow-hidden">
-            <h3 class="text-xl font-black uppercase italic mb-6 tracking-tighter">
-              Meu <span class="text-amber-500">Histórico</span>
-            </h3>
-
-            <div v-if="cart.orderHistory.length > 0" class="overflow-y-auto pr-2 custom-scrollbar space-y-8 text-left">
+          <!-- ESTADO 2: LOGADO -->
+          <div v-else class="flex flex-col h-full overflow-hidden flex-1">
+            
+            <!-- Agrupador de Transição: Troca suave entre Lista e Detalhes -->
+            <transition name="slide" mode="out-in">
               
-              <!-- SEÇÃO: EM ANDAMENTO (Pulse animado para indicar atividade) -->
-              <div v-if="activeOrders.length > 0" class="space-y-4">
-                <div class="flex items-center gap-3 ml-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                  <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Em andamento</h4>
+              <!-- TELA A: LISTA DE PEDIDOS -->
+              <div v-if="!selectedOrder" key="list-view" class="flex flex-col h-full overflow-hidden">
+                <h3 class="text-xl font-black uppercase italic mb-6 tracking-tighter shrink-0">
+                  Meu <span class="text-amber-500">Histórico</span>
+                </h3>
+
+                <div v-if="cart.orderHistory.length > 0" class="overflow-y-auto pr-2 custom-scrollbar space-y-8 text-left flex-1">
+                  
+                  <!-- SEÇÃO: EM ANDAMENTO -->
+                  <div v-if="activeOrders.length > 0" class="space-y-4">
+                    <div class="flex items-center gap-3 ml-2">
+                      <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Em andamento</h4>
+                    </div>
+                    
+                    <div v-for="order in activeOrders" :key="order.id" class="bg-white/5 border border-white/10 rounded-[2rem] p-6">
+                      <div class="flex justify-between items-start mb-4">
+                        <div>
+                          <span class="text-[9px] text-neutral-600 font-black uppercase tracking-[0.2em] block mb-1">
+                            {{ new Date(order.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+                          </span>
+                          <span class="text-white font-black text-sm uppercase leading-none">
+                            Pedido #{{ order.displayId || '---' }}
+                          </span>
+                        </div>
+                        <span :style="{ backgroundColor: getStatusConfig(order.status).bg, color: getStatusConfig(order.status).color }"
+                          class="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter transition-colors">
+                          {{ getStatusConfig(order.status).label }}
+                        </span>
+                      </div>
+
+                      <div class="flex justify-between items-center border-t border-white/5 pt-4 mt-2">
+                        <div class="flex flex-col">
+                          <span class="text-neutral-400 text-[10px] uppercase tracking-widest font-bold">{{ order.itemsCount || order.items?.length || 0 }} itens</span>
+                          <span class="text-amber-500 text-sm font-black italic">R$ {{ order.total.toFixed(2) }}</span>
+                        </div>
+                        <button @click="selectedOrder = order" class="text-white bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors">
+                          Detalhes
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- SEÇÃO: ANTERIORES -->
+                  <div v-if="completedOrders.length > 0" class="space-y-4">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-700 ml-2">Anteriores</h4>
+                    
+                    <div v-for="order in completedOrders" :key="order.id" class="bg-black/40 border border-white/5 rounded-[2rem] p-6 opacity-80">
+                      <div class="flex justify-between items-start mb-4">
+                        <div>
+                          <span class="text-[9px] text-neutral-600 font-black uppercase tracking-[0.2em] block mb-1">
+                            {{ new Date(order.createdAt).toLocaleDateString('pt-BR') }}
+                          </span>
+                          <span class="text-white font-black text-sm uppercase leading-none">
+                            Pedido #{{ order.displayId || '---' }}
+                          </span>
+                        </div>
+                        <span :style="{ backgroundColor: getStatusConfig(order.status).bg, color: getStatusConfig(order.status).color }"
+                          class="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter opacity-80">
+                          {{ getStatusConfig(order.status).label }}
+                        </span>
+                      </div>
+
+                      <div class="flex justify-between items-center border-t border-white/5 pt-4 mt-2">
+                        <div class="flex flex-col">
+                          <span class="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">{{ order.itemsCount || order.items?.length || 0 }} itens</span>
+                          <span class="text-neutral-300 text-sm font-black italic">R$ {{ order.total.toFixed(2) }}</span>
+                        </div>
+                        <button @click="selectedOrder = order" class="text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors">
+                          Detalhes
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div v-for="order in activeOrders" :key="order.id" class="bg-white/5 border border-white/10 rounded-[2rem] p-6">
-                  <div class="flex justify-between items-start mb-4">
-                    <div>
-                      <span class="text-[9px] text-neutral-600 font-black uppercase tracking-[0.2em] block mb-1">
-                        {{ new Date(order.createdAt).toLocaleDateString('pt-BR') }}
-                      </span>
-                      <span class="text-white font-black text-sm uppercase leading-none">
-                        {{ order.brand.name }} {{ order.brand.surname }}
-                      </span>
-                    </div>
-                    <span :style="{ backgroundColor: getStatusConfig(order.status).bg, color: getStatusConfig(order.status).color }"
-                      class="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter transition-colors">
-                      {{ getStatusConfig(order.status).label }}
-                    </span>
-                  </div>
 
-                  <div class="border-t border-white/5 pt-4 mt-4 space-y-2">
-                    <div v-for="item in order.items" :key="item.id" class="text-neutral-400 text-[11px] flex justify-between font-sans">
-                      <span>{{ item.quantity }}x {{ item.name }}</span>
-                      <span>R$ {{ (item.price * item.quantity).toFixed(2) }}</span>
-                    </div>
+                <div v-else class="py-10 text-center flex-1 flex flex-col justify-center">
+                  <p class="text-neutral-500 text-sm italic font-sans">Nenhum pedido vinculado a este número.</p>
+                </div>
 
-                    <div class="flex justify-between mt-4 pt-4 border-t border-white/5 font-black text-white text-xs tracking-widest">
-                      <span>TOTAL</span>
-                      <span class="text-amber-500 text-sm italic">R$ {{ order.total.toFixed(2) }}</span>
-                    </div>
-
-                    <button @click="isStoreOpen ? cart.repeatOrder(order.items) : null" :disabled="!isStoreOpen" 
-                      :class="['w-full mt-6 py-4 rounded-2xl border text-[9px] font-black uppercase tracking-[0.2em] transition-all', 
-                      isStoreOpen ? 'border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-black cursor-pointer' : 'border-neutral-800 text-neutral-600 cursor-not-allowed opacity-50']">
-                      <span v-if="isStoreOpen">Repetir este pedido ↺</span>
-                      <span v-else>Loja fechada no momento</span>
-                    </button>
-                  </div>
+                <!-- FOOTER DA LISTA -->
+                <div class="mt-4 pt-6 border-t border-white/5 flex flex-col items-center gap-3 shrink-0">
+                  <p class="text-neutral-600 text-[9px] uppercase tracking-[0.2em] font-black">
+                    Conectado: {{ cart.customerPhone }}
+                  </p>
+                  <button @click="handleLogout"
+                    class="text-red-500/40 hover:text-red-500 text-[9px] font-black uppercase tracking-widest transition-colors">
+                    Sair ou trocar de conta
+                  </button>
                 </div>
               </div>
 
-              <!-- SEÇÃO: ANTERIORES (Opacidade reduzida para hierarquia) -->
-              <div v-if="completedOrders.length > 0" class="space-y-4">
-                <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-700 ml-2">Anteriores</h4>
+              <!-- TELA B: DETALHES DO PEDIDO SELECIONADO -->
+              <div v-else key="details-view" class="flex flex-col h-full overflow-hidden">
                 
-                <div v-for="order in completedOrders" :key="order.id" class="bg-black/40 border border-white/5 rounded-[2rem] p-6 opacity-70">
-                  <div class="flex justify-between items-start mb-4">
-                    <div>
-                      <span class="text-[9px] text-neutral-600 font-black uppercase tracking-[0.2em] block mb-1">
-                        {{ new Date(order.createdAt).toLocaleDateString('pt-BR') }}
-                      </span>
-                      <span class="text-white font-black text-sm uppercase leading-none">
-                        {{ order.brand.name }} {{ order.brand.surname }}
-                      </span>
-                    </div>
-                    <span :style="{ backgroundColor: getStatusConfig(order.status).bg, color: getStatusConfig(order.status).color }"
-                      class="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter opacity-80">
-                      {{ getStatusConfig(order.status).label }}
-                    </span>
-                  </div>
-
-                  <div class="border-t border-white/5 pt-4 mt-4 space-y-2">
-                    <div v-for="item in order.items" :key="item.id" class="text-neutral-500 text-[11px] flex justify-between font-sans">
-                      <span>{{ item.quantity }}x {{ item.name }}</span>
-                    </div>
-
-                    <div class="flex justify-between mt-4 pt-4 border-t border-white/5 font-black text-neutral-400 text-[10px] tracking-widest">
-                      <span>TOTAL</span>
-                      <span class="italic">R$ {{ order.total.toFixed(2) }}</span>
-                    </div>
-
-                    <button @click="isStoreOpen ? cart.repeatOrder(order.items) : null" :disabled="!isStoreOpen"
-                      class="w-full mt-6 py-4 rounded-2xl border border-white/5 text-neutral-600 text-[9px] font-black uppercase tracking-[0.2em] hover:border-amber-500/20 hover:text-amber-500 transition-all">
-                      Repetir este pedido ↺
-                    </button>
+                <div class="flex items-center gap-4 mb-8 shrink-0">
+                  <button @click="selectedOrder = null" class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                  </button>
+                  <div>
+                    <h3 class="text-xl font-black uppercase italic tracking-tighter leading-none">
+                      Detalhes
+                    </h3>
+                    <span class="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em]">Pedido #{{ selectedOrder.displayId }}</span>
                   </div>
                 </div>
+
+                <div class="overflow-y-auto pr-2 custom-scrollbar flex-1 space-y-6">
+                  
+                  <!-- Cabecalho do Pedido -->
+                  <div class="bg-black/40 border border-white/5 rounded-2xl p-5 flex justify-between items-center">
+                    <div>
+                      <span class="text-[9px] text-neutral-500 font-black uppercase tracking-[0.2em] block mb-1">Status Atual</span>
+                      <span :style="{ color: getStatusConfig(selectedOrder.status).color }" class="font-black text-sm uppercase tracking-tighter">
+                        {{ getStatusConfig(selectedOrder.status).label }}
+                      </span>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-[9px] text-neutral-500 font-black uppercase tracking-[0.2em] block mb-1">Data</span>
+                      <span class="text-white font-bold text-xs">{{ new Date(selectedOrder.createdAt).toLocaleDateString('pt-BR') }}</span>
+                    </div>
+                  </div>
+
+                  <!-- NOVA SEÇÃO: Entrega e Pagamento -->
+                  <div class="bg-black/40 border border-white/5 rounded-2xl p-5">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600 mb-4">Informações</h4>
+                    
+                    <div class="space-y-4">
+                      <!-- Entrega/Retirada -->
+                      <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                          <svg v-if="selectedOrder.deliveryMethod === 'delivery'" class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                          <svg v-else class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        </div>
+                        <div>
+                          <span class="text-white font-bold text-xs block">
+                            {{ selectedOrder.deliveryMethod === 'delivery' ? 'Entrega (Motoboy)' : 'Retirada no Balcão' }}
+                          </span>
+                          <span v-if="selectedOrder.deliveryMethod === 'delivery' && selectedOrder.address" class="text-neutral-400 text-[11px] mt-1 block leading-relaxed font-sans">
+                            {{ selectedOrder.address }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="h-px bg-white/5 w-full"></div>
+
+                      <!-- Forma de Pagamento -->
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                          <svg class="w-4 h-4 text-[#10B981]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div>
+                          <span class="text-neutral-400 text-xs block">Pagamento via <strong class="text-white uppercase">{{ selectedOrder.paymentMethod || 'Não informado' }}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Lista de Itens Expandida -->
+                  <div>
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600 mb-4 ml-1">Itens do Pedido</h4>
+                    <div class="space-y-4">
+                      <div v-for="item in selectedOrder.items" :key="item.id" class="border-b border-white/5 pb-4 last:border-0">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1 pr-4">
+                            <span class="text-white font-bold text-sm block">{{ item.quantity }}x {{ item.name }}</span>
+                            <span v-if="item.observation" class="text-amber-500/80 text-[11px] italic font-sans mt-1 block leading-tight">
+                              Obs: {{ item.observation }}
+                            </span>
+                          </div>
+                          <span class="text-neutral-400 text-xs font-mono mt-0.5">R$ {{ (item.price * item.quantity).toFixed(2) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Total -->
+                  <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex justify-between items-center mt-4 mb-4">
+                    <span class="text-amber-500 text-[10px] font-black uppercase tracking-widest">Total Pago</span>
+                    <span class="text-amber-500 font-black text-xl italic">R$ {{ selectedOrder.total.toFixed(2) }}</span>
+                  </div>
+                </div>
+
+                <!-- Footer Detalhes -->
+                <div class="mt-4 pt-4 shrink-0 border-t border-white/5">
+                  <button @click="isStoreOpen ? repeatAndClose(selectedOrder.items) : null" :disabled="!isStoreOpen" 
+                    :class="['w-full py-5 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl', 
+                    isStoreOpen ? 'bg-amber-500 text-black hover:bg-amber-400 active:scale-95 shadow-amber-500/10' : 'bg-neutral-800 text-neutral-600 cursor-not-allowed opacity-50']">
+                    <span v-if="isStoreOpen">Repetir este pedido ↺</span>
+                    <span v-else>Loja fechada no momento</span>
+                  </button>
+                </div>
+
               </div>
-            </div>
 
-            <!-- VAZIO -->
-            <div v-else class="py-10 text-center">
-              <p class="text-neutral-500 text-sm italic font-sans">Nenhum pedido vinculado a este número.</p>
-            </div>
-
-            <!-- FOOTER -->
-            <div class="mt-auto pt-6 border-t border-white/5 flex flex-col items-center gap-3">
-              <p class="text-neutral-600 text-[9px] uppercase tracking-[0.2em] font-black">
-                Conectado: {{ cart.customerPhone }}
-              </p>
-              <button @click="handleLogout"
-                class="text-red-500/40 hover:text-red-500 text-[9px] font-black uppercase tracking-widest transition-colors">
-                Sair ou trocar de conta
-              </button>
-            </div>
+            </transition>
           </div>
 
         </div>
@@ -151,6 +247,21 @@ const props = defineProps({
     default: true
   }
 })
+
+// ESTADO DO PEDIDO SELECIONADO (Detalhes)
+const selectedOrder = ref(null)
+
+const closeModal = () => {
+  cart.isHistoryOpen = false
+  setTimeout(() => {
+    selectedOrder.value = null // Reseta os detalhes ao fechar o modal
+  }, 300)
+}
+
+const repeatAndClose = (items) => {
+  cart.repeatOrder(items)
+  selectedOrder.value = null // Reseta para a próxima vez que abrir
+}
 
 // AGRUPAMENTO DE PEDIDOS
 const activeOrders = computed(() => {
@@ -213,6 +324,19 @@ const handleLogout = () => {
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.slide-enter-active, .slide-leave-active {
+  transition: all 0.25s ease-out;
+}
+.slide-enter-from {
+  opacity: 0;
+  transform: translateX(15px);
+}
+.slide-leave-to {
+  opacity: 0;
+  transform: translateX(-15px);
+}
+
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #262626; border-radius: 10px; }
 </style>

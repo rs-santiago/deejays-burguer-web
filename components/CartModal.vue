@@ -13,15 +13,24 @@
               brand.name }}</span></h3>
 
           <div class="max-h-[30vh] overflow-y-auto mb-6 pr-2 custom-scrollbar">
-            <div v-for="item in cart.currentCartItems" :key="item.id"
-              class="flex justify-between items-center py-4 border-b border-white/5">
-              <div class="flex flex-col">
+            <div v-for="item in cart.currentCartItems" :key="item.cartItemId"
+              class="flex justify-between items-start py-4 border-b border-white/5">
+              
+              <div class="flex flex-col flex-1 pr-4">
                 <span class="text-white font-bold text-sm">{{ item.quantity }}x {{ item.name }}</span>
-                <span class="text-neutral-500 text-[10px] uppercase">R$ {{ (item.price * item.quantity).toFixed(2)
-                  }}</span>
+                <!-- Exibe a observação se existir -->
+                <span v-if="item.observation" class="text-amber-500/80 text-[11px] italic font-sans mt-1 leading-tight">
+                  Obs: {{ item.observation }}
+                </span>
+                <span class="text-neutral-500 text-[10px] uppercase mt-1">
+                  R$ {{ (item.price * item.quantity).toFixed(2) }}
+                </span>
               </div>
-              <button @click="cart.removeFromCart(item.id)"
-                class="text-red-500/50 text-[10px] font-black uppercase px-2">Remover</button>
+              
+              <button @click="cart.removeFromCart(item.cartItemId)"
+                class="text-red-500/50 hover:text-red-500 text-[10px] font-black uppercase px-2 py-1 mt-1 transition-colors">
+                Remover
+              </button>
             </div>
           </div>
 
@@ -160,12 +169,15 @@ const sendOrder = async () => {
   msg += `*Telefone:* ${cart.customerPhone}%0A`
   msg += `--------------------------%0A`
   cart.currentCartItems.forEach(i => {
-    msg += `${i.quantity}x ${i.name} - R$ ${(i.price * i.quantity).toFixed(2)}%0A`
+    msg += `*${i.quantity}x ${i.name}* - R$ ${(i.price * i.quantity).toFixed(2)}%0A`
+    // Adiciona a observação na mensagem do WhatsApp se ela existir
+    if (i.observation) {
+      msg += `> _Obs: ${i.observation}_%0A`
+    }
   })
   msg += `--------------------------%0A`
   msg += `*Subtotal:* R$ ${cart.totalPrice.toFixed(2)}%0A`
 
-  // Adiciona as novas informações no zap
   msg += `%0A*MÉTODO DE ENTREGA:* ${deliveryType.value === 'delivery' ? 'Motoboy' : 'Vou Retirar'}%0A`
   if (deliveryType.value === 'delivery') {
     msg += `*Endereço:* ${address.value}%0A`
@@ -182,7 +194,6 @@ const sendOrder = async () => {
 </script>
 
 <style scoped>
-/* Mesmos estilos que você já tinha */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
