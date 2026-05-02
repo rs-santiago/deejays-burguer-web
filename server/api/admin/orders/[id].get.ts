@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
       where: { id },
       include: {
         brand: {
-          select: { name: true }
+          select: { name: true, logoUrl: true }
         }
       }
     })
