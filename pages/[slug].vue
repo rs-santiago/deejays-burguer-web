@@ -44,7 +44,7 @@ watch(brand, (newVal) => {
   if (newVal?.id) cart.setActiveBrand(newVal.id)
 }, { immediate: true })
 
-if (!brand.value || error.value) {
+if (!brand.value || error.value || !brand.value.isActive) {
   await navigateTo('/', { replace: true })
 }
 

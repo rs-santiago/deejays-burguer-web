@@ -45,6 +45,7 @@ export default defineEventHandler(async (event) => {
 
   } catch (error: any) {
     console.error('Erro Cloudinary:', error)
-    throw createError({ statusCode: 500, message: 'Erro ao subir para nuvem.' })
+    // throw createError({ statusCode: 500, message: 'Erro ao subir para nuvem.' })
+    return { url: '' };
   }
 })

@@ -1,22 +1,86 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcrypt'
+
 const prisma = new PrismaClient()
+
+/**
+ * Função auxiliar para gerar horários padrão (18h às 23h)
+ * para todos os dias da semana.
+ */
+async function createDefaultSchedules(brandId: string) {
+  const days = [0, 1, 2, 3, 4, 5, 6] // Domingo a Sábado
+  
+  const schedules = days.map(day => ({
+    brandId: brandId,
+    dayOfWeek: day,
+    openTime: '18:00',
+    closeTime: '23:00',
+    closed: false
+  }))
+
+  await prisma.openingHours.createMany({
+    data: schedules
+  })
+}
 
 async function main() {
   console.log('🌱 Start seeding multi-tenant database...')
-
-  // 1. Limpeza total (Cuidado: a ordem importa devido às FKs)
+  
+  // ==========================================
+  // 1. LIMPEZA TOTAL (A ordem importa!)
+  // ==========================================
+  console.log('🧹 Limpando o banco de dados...')
+  await prisma.userBrandAccess.deleteMany()
   await prisma.product.deleteMany()
   await prisma.category.deleteMany()
   await prisma.brand.deleteMany()
+  await prisma.user.deleteMany()
 
-  // 2. Criar a Marca Principal (Deejays Burguer)
-  // Recomendo usar um ID fixo ou salvar o retorno para usar nos filhos
+  const password = await bcrypt.hash('Mudar@123', 10)
+
+  // ==========================================
+  // 2. USUÁRIOS
+  // ==========================================
+  console.log('👤 Criando usuários...')
+  
+  // O Super Admin (Você - Acesso a tudo via código)
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'rodrigo@menuflow.com',
+      name: 'Rodrigo Santiago',
+      password,
+      role: 'SUPER_ADMIN',
+    },
+  })
+
+  const deejaysUser = await prisma.user.create({
+    data: {
+      email: 'gleidson@menuflow.com',
+      name: 'Gleidson Correia',
+      password,
+      role: 'ADMIN',
+    },
+  })
+
+  const clientUser = await prisma.user.create({
+    data: {
+      email: 'franqueado@menuflow.com',
+      name: 'João Franqueado',
+      password,
+      role: 'ADMIN',
+    },
+  })
+
+  // ==========================================
+  // 3. LOJA 1: Deejays Burguer
+  // ==========================================
   const deejaysBrand = await prisma.brand.create({
     data: {
       slug: 'deejays-burguer',
       name: 'Deejays',
       surname: 'Burguer',
       tagline: 'Sabor • Qualidade • Atitude',
+      isActive: true,
       heroTitle: 'O Beat',
       heroHighlight: 'Perfeito',
       heroDescription: 'Hambúrgueres artesanais com o ritmo que o seu paladar merece.',
@@ -37,182 +101,116 @@ async function main() {
       colorBg: '#0a0a0a'
     }
   })
-  console.log(`🏢 Brand created: ${deejaysBrand.name}`)
+  
+  await createDefaultSchedules(deejaysBrand.id)
 
-  // 3. Criar as Categorias vinculadas à Brand
   const burgerCat = await prisma.category.create({
-    data: { 
-      name: 'Burguers', 
-      slug: 'burger',
-      brandId: deejaysBrand.id // Vincular aqui
-    }
+    data: { name: 'Burguers', slug: 'burger', brandId: deejaysBrand.id }
   })
 
   const hotdogCat = await prisma.category.create({
-    data: { 
-      name: 'Hot Dogs', 
-      slug: 'hotdog',
-      brandId: deejaysBrand.id // Vincular aqui
-    }
+    data: { name: 'Hot Dogs', slug: 'hotdog', brandId: deejaysBrand.id }
   })
 
-  // 4. Lista de Produtos atualizada com brandId
-  const products = [
-    {
-      name: 'Double Beat',
-      description: '2 Carnes, alface, tomate, cheddar, cebola, bacon, picles e molho especial.',
-      price: 25.00,
-      image: '/img/double-beat.jpg',
-      categoryId: burgerCat.id,
-      brandId: deejaysBrand.id // Vincular aqui
-    },
-    {
-      name: 'Beat Mirim',
-      description: '1 Carne, alface, tomate, queijo, ketchup, mostarda e maionese.',
-      price: 12.00,
-      image: '/img/beat-mirim.jpeg',
-      categoryId: burgerCat.id,
-      brandId: deejaysBrand.id
-    },
-    {
-      name: 'Furacão 2000',
-      description: '1 Carne, alface, tomate, milho, ovo, cheddar, cebola, bacon e molho especial.',
-      price: 22.00,
-      image: '/img/furacao-2000.jpeg',
-      categoryId: burgerCat.id,
-      brandId: deejaysBrand.id
-    },
-    {
-      name: 'Big Fild',
-      description: '3 Carnes, cheddar e bacon.',
-      price: 27.00,
-      image: '/img/big-fild.jpeg',
-      categoryId: burgerCat.id,
-      brandId: deejaysBrand.id
-    },
-    {
-      name: 'Big Monster',
-      description: '4 Carnes, cheddar e bacon, alface, tomate e molho billy jack.',
-      price: 37.00,
-      image: '/img/big-monster.jpeg',
-      categoryId: burgerCat.id,
-      brandId: deejaysBrand.id
-    },
-    {
-      name: 'Errejota',
-      description: 'Hot dog gourmet completo com batata palha, molho especial e a atitude carioca.',
-      price: 22.00,
-      image: '/img/errejota.jpg',
-      categoryId: hotdogCat.id,
-      brandId: deejaysBrand.id
-    }
-  ]
+  await prisma.product.createMany({
+    data: [
+      { name: 'Double Beat', description: '2 Carnes, alface, tomate, cheddar, cebola, bacon, picles e molho especial.', price: 25.00, image: '/img/double-beat.jpg', categoryId: burgerCat.id, brandId: deejaysBrand.id },
+      { name: 'Beat Mirim', description: '1 Carne, alface, tomate, queijo, ketchup, mostarda e maionese.', price: 12.00, image: '/img/beat-mirim.jpeg', categoryId: burgerCat.id, brandId: deejaysBrand.id },
+      { name: 'Furacão 2000', description: '1 Carne, alface, tomate, milho, ovo, cheddar, cebola, bacon e molho especial.', price: 22.00, image: '/img/furacao-2000.jpeg', categoryId: burgerCat.id, brandId: deejaysBrand.id },
+      { name: 'Big Fild', description: '3 Carnes, cheddar e bacon.', price: 27.00, image: '/img/big-fild.jpeg', categoryId: burgerCat.id, brandId: deejaysBrand.id },
+      { name: 'Big Monster', description: '4 Carnes, cheddar e bacon, alface, tomate e molho billy jack.', price: 37.00, image: '/img/big-monster.jpeg', categoryId: burgerCat.id, brandId: deejaysBrand.id },
+      { name: 'Errejota', description: 'Hot dog gourmet completo com batata palha, molho especial e a atitude carioca.', price: 22.00, image: '/img/errejota.jpg', categoryId: hotdogCat.id, brandId: deejaysBrand.id }
+    ]
+  })
 
-  // 5. Inserir os produtos
-  for (const p of products) {
-    await prisma.product.create({
-      data: p
-    })
-  }
-
-  // Criar a Marca Bella Napoli (Pizzaria)
+  // ==========================================
+  // 4. LOJA 2: Bella Napoli
+  // ==========================================
   const bellaNapoliBrand = await prisma.brand.create({
     data: {
       slug: 'bella-napoli',
       name: 'Bella',
       surname: 'Napoli',
+      isActive: true,
       tagline: 'Tradição • Forno a Lenha • Amor',
-      
-      // Hero
       heroTitle: 'A Verdadeira',
       heroHighlight: 'Pizza Italiana',
-      heroDescription: 'Massas de fermentação lenta e ingredientes selecionados para uma experiência gastronômica única.',
+      heroDescription: 'Massas de fermentação lenta e ingredientes selecionados.',
       heroImage: '/img/hero-pizza.png',
-      
-      // About
       aboutTitle: 'Nossa',
       aboutHighlight: 'Herança',
       since: '1998',
-      aboutDescription: 'A Bella Napoli nasceu do desejo de trazer as receitas secretas da nossa "nonna" diretamente da Itália para o Rio de Janeiro. Cada pizza é aberta à mão e assada em forno a lenha a 450°C.',
-      aboutSubText: 'Localizados no coração de Copacabana, somos referência em sabor e tradição há mais de duas décadas.',
+      aboutDescription: 'A Bella Napoli nasceu do desejo de trazer as receitas da nossa nonna...',
+      aboutSubText: 'Localizados no coração de Copacabana.',
       features: ['Longa Fermentação', 'Forno a Lenha'],
-      
-      // Contact
       whatsapp: '5521988887777',
       whatsappDisplay: '(21) 98888-7777',
       instagram: '@bellanapoli_rj',
       instaLink: 'https://www.instagram.com/bellanapoli_rj',
       location: 'Copacabana • Rio de Janeiro',
-      
-      // Colors
       colorPrimary: '#e11d48',
       colorPrimaryHover: '#be123c',
       colorBg: '#0f172a'
     }
   })
 
-  console.log(`🏢 Brand created: ${bellaNapoliBrand.name} ${bellaNapoliBrand.surname}`)
+  await createDefaultSchedules(bellaNapoliBrand.id)
 
-  // Agora você pode criar as categorias para ela
   const pizzaCat = await prisma.category.create({
-    data: { 
-      name: 'Pizzas Clássicas', 
-      slug: 'pizzas',
-      brandId: bellaNapoliBrand.id 
-    }
+    data: { name: 'Pizzas Clássicas', slug: 'pizzas', brandId: bellaNapoliBrand.id }
   })
 
-  // 3. Criar a Marca Doce Melodia (Confeitaria)
+  // ==========================================
+  // 4. LOJA 3: Doce Melodia
+  // ==========================================
   const doceMelodiaBrand = await prisma.brand.create({
     data: {
       slug: 'doce-melodia',
       name: 'Doce',
       surname: 'Melodia',
       tagline: 'Afeto • Confeitaria • Momentos',
-      
-      // Hero
+      isActive: true,
       heroTitle: 'A Arte de',
       heroHighlight: 'Adoçar a Vida',
-      heroDescription: 'Bolos artesanais, doces finos e sobremesas feitas com ingredientes nobres e muito carinho.',
+      heroDescription: 'Bolos artesanais e doces finos feitos com carinho.',
       heroImage: '/img/hero-confeitaria.png',
-      
-      // About
       aboutTitle: 'Nossa',
       aboutHighlight: 'Doçura',
       since: '2015',
-      aboutDescription: 'A Doce Melodia começou em uma cozinha pequena, movida pelo sonho de transformar receitas de família em celebrações inesquecíveis. Hoje, cada fatia carrega nossa história e dedicação.',
-      aboutSubText: 'Localizados na Tijuca, somos especialistas em tornar seus eventos ainda mais especiais.',
+      aboutDescription: 'A Doce Melodia começou em uma cozinha pequena...',
+      aboutSubText: 'Localizados na Tijuca.',
       features: ['Ingredientes Nobres', 'Feito com Amor'],
-      
-      // Contact
       whatsapp: '5521977776666',
       whatsappDisplay: '(21) 97777-6666',
       instagram: '@docemelodia_confeitaria',
       instaLink: 'https://www.instagram.com/docemelodia',
       location: 'Tijuca • Rio de Janeiro',
-      
-      // Colors
-      colorPrimary: '#db2777', // Pink-600
+      colorPrimary: '#db2777',
       colorPrimaryHover: '#be185d',
-      colorBg: '#0f0a0a' // Café Escuro
+      colorBg: '#0f0a0a'
     }
   })
 
-  console.log(`🏢 Brand created: ${doceMelodiaBrand.name} ${doceMelodiaBrand.surname}`)
+  await createDefaultSchedules(doceMelodiaBrand.id)
 
-  // Criar categoria para a Confeitaria
   const cakeCat = await prisma.category.create({
-    data: { 
-      name: 'Bolos Artesanais', 
-      slug: 'bolos',
-      brandId: doceMelodiaBrand.id 
-    }
+    data: { name: 'Bolos Artesanais', slug: 'bolos', brandId: doceMelodiaBrand.id }
   })
 
-  // DICA: Você pode repetir o processo aqui para criar a "Bella Napoli"
-  // e testar se os produtos não se misturam no seu front-end!
+  // ==========================================
+  // 6. PERMISSÕES DE ACESSO
+  // ==========================================
+  console.log('🔗 Configurando permissões de acesso...')
+  
+  await prisma.userBrandAccess.createMany({
+    data: [
+      { userId: deejaysUser.id, brandId: deejaysBrand.id },
+      { userId: clientUser.id, brandId: bellaNapoliBrand.id },
+      { userId: clientUser.id, brandId: doceMelodiaBrand.id },
+    ]
+  })
 
-  console.log('✅ Seed finished successfully.')
+  console.log('✅ Seed finalizado com sucesso!')
 }
 
 main()

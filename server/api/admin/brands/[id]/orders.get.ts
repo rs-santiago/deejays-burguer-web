@@ -47,11 +47,18 @@ export default defineEventHandler(async (event) => {
         id: true,
         displayId: true,
         customerName: true,
+        customerPhone: true,
         total: true,
         status: true,
         items: true, 
         createdAt: true,
-        is_printed: true
+        is_printed: true,
+        brand: {
+          select: {
+            name: true,
+            logoUrl: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc',
@@ -69,11 +76,14 @@ export default defineEventHandler(async (event) => {
         id: order.id,
         displayId: order.displayId.toString().padStart(5, '0'),
         customerName: order.customerName,
+        customerPhone: order.customerPhone,
         is_printed: order.is_printed,
         total: Number(order.total), // Garante que retorne como número
         status: order.status,
         createdAt: order.createdAt,
         itemsCount: itemsArray.length,
+        brandName: order.brand?.name || 'Minha Loja',
+        brandLogoUrl: order.brand?.logoUrl || null,
       }
     })
 

@@ -26,7 +26,6 @@ export default defineEventHandler(async (event) => {
       include: { _count: { select: { products: true } } }
     })
   ])
-
   return {
     metrics: {
       totalBrands: brandIds.length,
