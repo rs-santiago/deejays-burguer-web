@@ -9,8 +9,14 @@
           <button @click="cart.isModalOpen = false"
             class="absolute top-6 right-6 text-neutral-500 hover:text-white transition-colors z-10">✕</button>
 
-          <h3 class="text-xl font-black uppercase italic mb-8">Sacola <span :style="{ color: brand.colors.primary }">{{
-              brand.name }}</span></h3>
+          <h3 class="text-xl font-black uppercase italic mb-8">Sacola <span :style="{ color: brand.colors.primary }">{{ brand.name }}</span></h3>
+
+          <!-- AVISO VISUAL DE MESA -->
+          <div v-if="cart.mesa" class="mb-6 flex items-center justify-center py-3 rounded-xl border border-amber-500/30 bg-amber-500/10">
+            <span class="text-amber-500 font-black uppercase tracking-[0.2em] text-[11px]">
+              📍 Atendimento na Mesa {{ cart.mesa }}
+            </span>
+          </div>
 
           <div class="max-h-[30vh] overflow-y-auto mb-6 pr-2 custom-scrollbar">
             <div v-for="item in cart.currentCartItems" :key="item.cartItemId"
@@ -46,42 +52,44 @@
                 class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-white/30 outline-none transition-colors" />
             </div>
             <div>
-              <label
-                class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">WhatsApp</label>
+              <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">WhatsApp</label>
               <input v-model="cart.customerPhone" type="tel" placeholder="(00) 00000-0000"
                 class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-white/30 outline-none transition-colors font-mono" />
             </div>
           </div>
 
-          <div class="mb-6">
-            <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Como deseja
-              receber?</label>
-            <div class="flex gap-3">
-              <button @click="deliveryType = 'delivery'"
-                class="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border"
-                :style="deliveryType === 'delivery' ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' } : { backgroundColor: 'transparent', borderColor: '#333', color: '#888' }">
-                Entrega
-              </button>
-              <button @click="deliveryType = 'pickup'"
-                class="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border"
-                :style="deliveryType === 'pickup' ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' } : { backgroundColor: 'transparent', borderColor: '#333', color: '#888' }">
-                Retirada
-              </button>
+          <!-- SÓ EXIBE ENTREGA/RETIRADA SE NÃO ESTIVER EM UMA MESA -->
+          <template v-if="!cart.mesa">
+            <div class="mb-6">
+              <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Como deseja receber?</label>
+              <div class="flex gap-3">
+                <button @click="deliveryType = 'delivery'"
+                  class="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border"
+                  :style="deliveryType === 'delivery' ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' } : { backgroundColor: 'transparent', borderColor: '#333', color: '#888' }">
+                  Entrega
+                </button>
+                <button @click="deliveryType = 'pickup'"
+                  class="flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border"
+                  :style="deliveryType === 'pickup' ? { backgroundColor: brand.colors.primary, borderColor: brand.colors.primary, color: '#000' } : { backgroundColor: 'transparent', borderColor: '#333', color: '#888' }">
+                  Retirada
+                </button>
+              </div>
             </div>
-          </div>
 
-          <transition name="fade">
-            <div v-if="deliveryType === 'delivery'" class="mb-6">
-              <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Endereço
-                Completo</label>
-              <input v-model="address" type="text" placeholder="Rua, Número, Bairro, Referência"
-                class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-white/30 outline-none transition-colors" />
-            </div>
-          </transition>
+            <transition name="fade">
+              <div v-if="deliveryType === 'delivery'" class="mb-6">
+                <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Endereço Completo</label>
+                <input v-model="address" type="text" placeholder="Rua, Número, Bairro, Referência"
+                  class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-white/30 outline-none transition-colors" />
+              </div>
+            </transition>
+          </template>
 
+          <!-- PAGAMENTO ADAPTADO PARA MESA -->
           <div class="mb-8">
-            <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Pagamento na
-              entrega/retirada</label>
+            <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">
+              {{ cart.mesa ? 'Forma de Pagamento' : 'Pagamento na entrega/retirada' }}
+            </label>
             <div class="grid grid-cols-3 gap-2">
               <button v-for="method in ['PIX', 'CARTÃO', 'DINHEIRO']" :key="method" @click="paymentType = method"
                 class="py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border"
@@ -113,6 +121,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useCartStore } from '~/stores/cart' // Ajuste o caminho se necessário
 
 const props = defineProps({
   brand: Object,
@@ -138,11 +147,16 @@ const sendOrder = async () => {
     return alert("Preencha nome e telefone corretamente.")
   }
 
-  if (deliveryType.value === 'delivery' && address.value.trim().length < 5) {
+  // Só valida o endereço se NÃO for mesa e for delivery
+  if (!cart.mesa && deliveryType.value === 'delivery' && address.value.trim().length < 5) {
     return alert("Por favor, preencha o endereço de entrega completo.")
   }
 
   isSubmitting.value = true
+
+  // Define o método de entrega final baseado na presença da mesa
+  const finalDeliveryMethod = cart.mesa ? 'MESA' : deliveryType.value
+  const finalAddress = cart.mesa ? `Mesa ${cart.mesa}` : (deliveryType.value === 'delivery' ? address.value : 'Retirada no Balcão')
 
   // 1. Salva no Banco de Dados
   try {
@@ -154,9 +168,10 @@ const sendOrder = async () => {
         customerPhone: cart.customerPhone,
         items: cart.currentCartItems,
         total: cart.totalPrice,
-        deliveryMethod: deliveryType.value,
+        deliveryMethod: finalDeliveryMethod,
         paymentMethod: paymentType.value,
-        address: deliveryType.value === 'delivery' ? address.value : 'Retirada no Balcão'
+        address: finalAddress,
+        mesa: cart.mesa || null // Campo novo enviado ao banco
       }
     })
   } catch (e) {
@@ -170,17 +185,21 @@ const sendOrder = async () => {
   msg += `--------------------------%0A`
   cart.currentCartItems.forEach(i => {
     msg += `*${i.quantity}x ${i.name}* - R$ ${(i.price * i.quantity).toFixed(2)}%0A`
-    // Adiciona a observação na mensagem do WhatsApp se ela existir
     if (i.observation) {
       msg += `> _Obs: ${i.observation}_%0A`
     }
   })
   msg += `--------------------------%0A`
-  msg += `*Subtotal:* R$ ${cart.totalPrice.toFixed(2)}%0A`
+  msg += `*Subtotal:* R$ ${cart.totalPrice.toFixed(2)}%0A%0A`
 
-  msg += `%0A*MÉTODO DE ENTREGA:* ${deliveryType.value === 'delivery' ? 'Motoboy' : 'Vou Retirar'}%0A`
-  if (deliveryType.value === 'delivery') {
-    msg += `*Endereço:* ${address.value}%0A`
+  // Adapta o texto do WhatsApp para a mesa
+  if (cart.mesa) {
+    msg += `📍 *ATENDIMENTO:* Mesa ${cart.mesa}%0A`
+  } else {
+    msg += `*MÉTODO DE ENTREGA:* ${deliveryType.value === 'delivery' ? 'Motoboy' : 'Vou Retirar'}%0A`
+    if (deliveryType.value === 'delivery') {
+      msg += `*Endereço:* ${address.value}%0A`
+    }
   }
   msg += `*PAGAMENTO:* ${paymentType.value}%0A`
 
@@ -189,7 +208,7 @@ const sendOrder = async () => {
 
   cart.clearCurrentCart()
   isSubmitting.value = false
-  cart.isModalOpen = false // Fecha o modal após enviar
+  cart.isModalOpen = false
 }
 </script>
 

@@ -8,7 +8,12 @@ import ProductModal from '../components/ProductModal.vue' // <-- 1. Importado aq
 
 const route = useRoute()
 const slug = route.params.slug
+const mesaParam = route.query.mesa
 const cart = useCartStore()
+// Se existir uma mesa na URL, guardamos no carrinho imediatamente!
+if (mesaParam) {
+  cart.setMesa(mesaParam) // Você vai precisar criar essa action no seu Pinia
+}
 const showScheduleModal = ref(false)
 
 // CONTROLE DO MODAL DE PRODUTOS <-- 2. Estados adicionados

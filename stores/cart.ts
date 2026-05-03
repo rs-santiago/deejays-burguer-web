@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 // 1. Atualizamos a interface para aceitar os novos campos
 interface CartItem {
   id: string
-  cartItemId: string // Adicionado: Identificador único para a linha no carrinho
+  cartItemId: string // Identificador único para a linha no carrinho
   name: string
   price: number
   quantity: number
-  observation?: string // Adicionado: Observações do cliente
+  observation?: string // Observações do cliente
 }
 
 interface MultiCart {
@@ -25,6 +25,8 @@ export const useCartStore = defineStore('cart', {
     activeBrandId: '',
     isHistoryOpen: false,
     orderHistory: [] as any[],
+    // Estado para armazenar a mesa vinda do QR Code
+    mesa: null as string | null,
   }),
 
   getters: {
@@ -49,6 +51,11 @@ export const useCartStore = defineStore('cart', {
   },
 
   actions: {
+    // Salva a mesa lida pela URL
+    setMesa(numero: string) {
+      this.mesa = numero
+    },
+
     setActiveBrand(id: string) {
       this.activeBrandId = id
     },
@@ -72,6 +79,7 @@ export const useCartStore = defineStore('cart', {
       this.orderHistory = []
       this.isHistoryOpen = false
       this.carts[this.activeBrandId] = []
+      this.mesa = null 
     },
 
     repeatOrder(items: any[]) {
@@ -140,11 +148,11 @@ export const useCartStore = defineStore('cart', {
 
       if (index > -1) {
         const item = targetCart[index]
-        if (item && item.quantity > 1) {
-          item.quantity--
-        } else {
-          targetCart.splice(index, 1)
-        }
+        targetCart.splice(index, 1)
+        // if (item && item.quantity > 1) {
+        //   item.quantity--
+        // } else {
+        // }
       }
     },
 
