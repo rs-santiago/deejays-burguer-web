@@ -149,10 +149,6 @@ export const useCartStore = defineStore('cart', {
       if (index > -1) {
         const item = targetCart[index]
         targetCart.splice(index, 1)
-        // if (item && item.quantity > 1) {
-        //   item.quantity--
-        // } else {
-        // }
       }
     },
 
