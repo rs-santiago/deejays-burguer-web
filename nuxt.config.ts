@@ -26,15 +26,16 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   nitro: {
     routeRules: {
-      // Libera todas as rotas da API para o seu painel Web conseguir logar
+      // O cors: true faz o Nuxt responder o OPTIONS com 204 automaticamente!
       '/api/**': {
-        cors: true,
+        cors: true, 
         headers: {
-          'Access-Control-Allow-Origin': '*', 
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
-        },
-      },
-    },
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Headers': '*',
+        }
+      }
+    }
   },
 })
