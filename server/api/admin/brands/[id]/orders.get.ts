@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const brandId = getRouterParam(event, 'id')
   const query = getQuery(event)
 
-  const { start, end, search } = query
+  const { start, end, search, type } = query
 
   if (!brandId) {
     throw createError({
@@ -21,6 +21,13 @@ export default defineEventHandler(async (event) => {
     // 2. Monta o objeto de filtro dinamicamente
     const whereClause: any = {
       brandId: brandId,
+    }
+
+    // Filtro Lógico: Separa Ativos do Histórico direto no Banco de Dados
+    if (type === 'ACTIVE') {
+      whereClause.status = { in: ['PENDING', 'PREPARING', 'DISPATCHED'] }
+    } else if (type === 'HISTORY') {
+      whereClause.status = { in: ['DELIVERED', 'CANCELLED'] }
     }
 
     // Filtro por Período de Data (Sincronizado com o App)
@@ -53,6 +60,7 @@ export default defineEventHandler(async (event) => {
         items: true, 
         createdAt: true,
         is_printed: true,
+        mesa: true,
         brand: {
           select: {
             name: true,
@@ -82,6 +90,8 @@ export default defineEventHandler(async (event) => {
         status: order.status,
         createdAt: order.createdAt,
         itemsCount: itemsArray.length,
+        items: itemsArray,
+        mesa: order.mesa,
         brandName: order.brand?.name || 'Minha Loja',
         brandLogoUrl: order.brand?.logoUrl || null,
       }
