@@ -23,5 +23,18 @@ export default defineNuxtConfig({
       ]
     }
   },
-  devtools: { enabled: true }
+  devtools: { enabled: true },
+  nitro: {
+    routeRules: {
+      // Libera todas as rotas da API para o seu painel Web conseguir logar
+      '/api/**': {
+        cors: true,
+        headers: {
+          'Access-Control-Allow-Origin': '*', 
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+        },
+      },
+    },
+  },
 })
