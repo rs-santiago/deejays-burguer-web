@@ -46,7 +46,8 @@ export default defineEventHandler(async (event) => {
         items: true, 
         createdAt: true,
         is_printed: true,
-        deliveryMethod: true, 
+        deliveryMethod: true,
+        paymentMethod: true,
         address: true,
         brand: {
           select: { name: true, logoUrl: true }
