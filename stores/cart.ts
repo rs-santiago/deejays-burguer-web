@@ -21,6 +21,7 @@ export const useCartStore = defineStore('cart', {
     carts: {} as MultiCart,
     customerPhone: '',
     customerName: '',
+    customerAddress: '', // Novo campo para o endereço do cliente
     isModalOpen: false,
     activeBrandId: '',
     isHistoryOpen: false,
@@ -80,6 +81,7 @@ export const useCartStore = defineStore('cart', {
       this.isHistoryOpen = false
       this.carts[this.activeBrandId] = []
       this.mesa = null 
+      // Não limpamos o endereço, pois o cliente pode querer usar o mesmo depois
     },
 
     repeatOrder(items: any[]) {

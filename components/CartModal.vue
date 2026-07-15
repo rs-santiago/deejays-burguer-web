@@ -79,7 +79,7 @@
             <transition name="fade">
               <div v-if="deliveryType === 'delivery'" class="mb-6">
                 <label class="text-neutral-500 text-[9px] uppercase tracking-[0.3em] font-black mb-3 block">Endereço Completo</label>
-                <input v-model="address" type="text" placeholder="Rua, Número, Bairro, Referência"
+                <input v-model="cart.customerAddress" type="text" placeholder="Rua, Número, Bairro, Referência"
                   class="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-white/30 outline-none transition-colors" />
               </div>
             </transition>
@@ -134,7 +134,6 @@ const cart = useCartStore()
 
 const deliveryType = ref('delivery') // 'delivery' ou 'pickup'
 const paymentType = ref('PIX') // 'PIX', 'CARTÃO', 'DINHEIRO'
-const address = ref('')
 const isSubmitting = ref(false)
 
 const sendOrder = async () => {
@@ -148,40 +147,51 @@ const sendOrder = async () => {
   }
 
   // Só valida o endereço se NÃO for mesa e for delivery
-  if (!cart.mesa && deliveryType.value === 'delivery' && address.value.trim().length < 5) {
-    return alert("Por favor, preencha o endereço de entrega completo.")
+  if (!cart.mesa && deliveryType.value === 'delivery' && cart.customerAddress.trim().length < 10) {
+    return alert("Por favor, preencha o endereço de entrega completo (rua, número, bairro).")
   }
 
   isSubmitting.value = true
 
-  // Define o método de entrega final baseado na presença da mesa
-  const finalDeliveryMethod = cart.mesa ? 'MESA' : deliveryType.value
-  const finalAddress = cart.mesa ? `Mesa ${cart.mesa}` : (deliveryType.value === 'delivery' ? address.value : 'Retirada no Balcão')
-
-  // 1. Salva no Banco de Dados
+  // 1. Tenta salvar o pedido no banco de dados (com validação de distância)
   try {
-    await $fetch('/api/order/create', {
+    // Prepara o corpo da requisição
+    const orderPayload = {
+      brandId: props.brand.id,
+      customerName: cart.customerName,
+      customerPhone: cart.customerPhone.replace(/\D/g, ''),
+      items: cart.currentCartItems,
+      total: cart.totalPrice,
+      paymentMethod: paymentType.value,
+      // Campos que dependem do tipo de atendimento
+      deliveryMethod: cart.mesa ? 'MESA' : deliveryType.value,
+      customerAddress: deliveryType.value === 'delivery' ? cart.customerAddress : null,
+      mesa: cart.mesa || null
+    }
+
+    await $fetch('/api/orders/create', {
       method: 'POST',
-      body: {
-        brandId: props.brand.id,
-        customerName: cart.customerName,
-        customerPhone: cart.customerPhone,
-        items: cart.currentCartItems,
-        total: cart.totalPrice,
-        deliveryMethod: finalDeliveryMethod,
-        paymentMethod: paymentType.value,
-        address: finalAddress,
-        mesa: cart.mesa || null // Campo novo enviado ao banco
-      }
+      body: orderPayload
     })
-  } catch (e) {
-    console.error("Erro ao salvar pedido, mas seguindo para WhatsApp...")
+
+  } catch (error: any) {
+    isSubmitting.value = false
+    console.error("Erro ao criar pedido:", error.data)
+
+    // Se o erro for de validação de distância (403) ou endereço não encontrado (400),
+    // exibe a mensagem específica vinda do backend.
+    if (error.statusCode === 403 || error.statusCode === 400) {
+      return alert(error.data.message)
+    }
+
+    // Para outros erros, exibe uma mensagem genérica.
+    return alert('Ocorreu um erro inesperado ao processar seu pedido. Por favor, tente novamente.')
   }
 
-  // 2. Monta a Mensagem do WhatsApp
+  // 2. Se o pedido foi salvo com sucesso, monta a Mensagem do WhatsApp
   let msg = `*PEDIDO - ${props.brand.name}*%0A`
   msg += `*Cliente:* ${cart.customerName}%0A`
-  msg += `*Telefone:* ${cart.customerPhone}%0A`
+  msg += `*Telefone:* ${cart.customerPhone.replace(/\D/g, '')}%0A`
   msg += `--------------------------%0A`
   cart.currentCartItems.forEach(i => {
     msg += `*${i.quantity}x ${i.name}* - R$ ${(i.price * i.quantity).toFixed(2)}%0A`
@@ -198,7 +208,7 @@ const sendOrder = async () => {
   } else {
     msg += `*MÉTODO DE ENTREGA:* ${deliveryType.value === 'delivery' ? 'Motoboy' : 'Vou Retirar'}%0A`
     if (deliveryType.value === 'delivery') {
-      msg += `*Endereço:* ${address.value}%0A`
+      msg += `*Endereço:* ${cart.customerAddress}%0A`
     }
   }
   msg += `*PAGAMENTO:* ${paymentType.value}%0A`
