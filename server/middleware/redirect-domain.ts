@@ -2,12 +2,10 @@ export default defineEventHandler((event) => {
   const host = getRequestHeader(event, 'host')
   const path = event.path
 
-  console.log(`Host: ${host}, Path: ${path}`);
+  // Defina o domínio sem o https://
+  const isTargetDomain = host === 'www.deejaysburguer.com.br' || host === 'deejaysburguer.com.br'
 
-  // Substitua pelo domínio que deve ser redirecionado
-  const targetDomain = 'https://www.deejaysburguer.com.br'
-
-  if (host === targetDomain && path === '/') {
+  if (isTargetDomain && path === '/') {
     return sendRedirect(event, '/deejays-burguer', 301)
   }
 })
