@@ -12,13 +12,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "(?<host>deejaysburguer\\.com\\.br|www\\.deejaysburguer\\.com\\.br)"
-        }
-      ],
+      "source": "/((?!deejays-burguer/|api/).*)",
       "destination": "/deejays-burguer/$1"
     }
   ]
