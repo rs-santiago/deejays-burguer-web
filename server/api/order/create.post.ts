@@ -8,21 +8,32 @@ export default defineEventHandler(async (event) => {
   const { 
     brandId, 
     customerName, 
-    customerPhone, // Vem formatado: (21) 96622-1271
+    customerPhone, 
     items, 
     total, 
-    address, 
+    customerAddress, // <-- MUDOU AQUI (de address para customerAddress)
+    address,          // suporte caso venha com o nome antigo
     deliveryMethod, 
     paymentMethod 
   } = body
 
-  // 1. LIMPEZA DO TELEFONE: Remove tudo que não for dígito e mantém como String
-  const cleanPhone = customerPhone.replace(/\D/g, ''); 
+  // Garante que pega um ou o outro
+  const finalAddress = customerAddress || address || null;
+
+  // Validação básica do brandId
+  if (!brandId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'O ID da marca (brandId) não foi fornecido.'
+    })
+  }
+
+  const cleanPhone = customerPhone ? customerPhone.replace(/\D/g, '') : ''; 
 
   try {
-    // 2. Upsert do Cliente usando o telefone limpo
     const customer = await prisma.customer.upsert({
-      where: { phone: cleanPhone }, // Agora busca/salva apenas números
+      where: { phone: cleanPhone },
       update: { name: customerName },
       create: {
         phone: cleanPhone,
@@ -30,15 +41,14 @@ export default defineEventHandler(async (event) => {
       },
     })
 
-    // 3. Cria o Pedido vinculado ao telefone limpo
     const order = await prisma.order.create({
       data: {
         total: Number(total),
         items: items, 
         brandId: brandId,
-        customerPhone: customer.phone, // "21966221271"
+        customerPhone: customer.phone,
         customerName: customer.name,
-        address: address,
+        address: finalAddress, // <-- Usa o endereço mapeado
         deliveryMethod: deliveryMethod,
         paymentMethod: paymentMethod,
       },
@@ -59,7 +69,6 @@ export default defineEventHandler(async (event) => {
 
     return { success: true, orderId: order.id }
   } catch (error) {
-    console.error(error);
     throw createError({
       statusCode: 500,
       statusMessage: 'Erro ao processar pedido no banco.',

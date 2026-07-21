@@ -25,7 +25,7 @@
               <div class="flex flex-col flex-1 pr-4">
                 <span class="text-white font-bold text-sm">{{ item.quantity }}x {{ item.name }}</span>
                 <!-- Exibe a observação se existir -->
-                <span v-if="item.observation" class="text-amber-500/80 text-[11px] italic font-sans mt-1 leading-tight">
+                <span v-if="item.observation" class="text-base font-black uppercase text-black mt-1 leading-snug tracking-wide">
                   Obs: {{ item.observation }}
                 </span>
                 <span class="text-neutral-500 text-[10px] uppercase mt-1">
@@ -157,7 +157,7 @@ const sendOrder = async () => {
   try {
     // Prepara o corpo da requisição
     const orderPayload = {
-      brandId: props.brand.id,
+      brandId: props.brand?.id || props.brand?.brandId,
       customerName: cart.customerName,
       customerPhone: cart.customerPhone.replace(/\D/g, ''),
       items: cart.currentCartItems,
@@ -240,5 +240,24 @@ const sendOrder = async () => {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 10px;
+}
+
+@media print {
+  /* Zera margens da página da impressora */
+  @page {
+    margin: 0 !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Se o container do cupom tiver id ou classe específica */
+  .print-area, #printable-order {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+  }
 }
 </style>
