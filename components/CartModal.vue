@@ -25,7 +25,7 @@
               <div class="flex flex-col flex-1 pr-4">
                 <span class="text-white font-bold text-sm">{{ item.quantity }}x {{ item.name }}</span>
                 <!-- Exibe a observação se existir -->
-                <span v-if="item.observation" class="text-base font-black uppercase text-black mt-1 leading-snug tracking-wide">
+                <span v-if="item.observation" class="receipt-observation">
                   Obs: {{ item.observation }}
                 </span>
                 <span class="text-neutral-500 text-[10px] uppercase mt-1">
@@ -249,21 +249,46 @@ const sendOrder = async () => {
 }
 
 @media print {
-  /* Zera margens da página da impressora */
+  /* 1. Zera todas as margens da página do navegador */
   @page {
+    size: 72mm auto; /* Força a largura para 72mm */
     margin: 0 !important;
   }
 
   html, body {
+    width: 72mm !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: monospace, 'Courier New', sans-serif; /* Fontes monospace alinham melhor em térmicas */
   }
 
-  /* Se o container do cupom tiver id ou classe específica */
-  .print-area, #printable-order {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
+  /* 2. Container Principal ocupa 100% da largura útil */
+  .receipt-container {
     width: 100% !important;
+    max-width: 72mm !important;
+    padding: 4px 0 !important; /* Mínimo recuo interno */
+    margin: 0 !important;
+    box-sizing: border-box;
   }
+}
+
+/* --- ESTILOS VISUAIS DO CUPOM --- */
+
+/* Observação bem destacada em caixa preta com texto branco ou negrito grande */
+.receipt-observation {
+  display: block;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  background-color: #000 !important;
+  color: #fff !important;
+  padding: 3px 6px !important;
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+  border-radius: 4px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 </style>
