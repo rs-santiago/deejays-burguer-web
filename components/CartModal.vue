@@ -122,6 +122,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useCartStore } from '~/stores/cart' // Ajuste o caminho se necessário
+import { FetchError } from 'ofetch'
+
 
 const props = defineProps({
   brand: Object,
@@ -174,19 +176,23 @@ const sendOrder = async () => {
       body: orderPayload
     })
 
-  } catch (error: any) {
+  } catch (error) {
     isSubmitting.value = false
-    console.error("Erro ao criar pedido:", error.data)
+    if (error instanceof FetchError) {
+      console.error("Erro ao criar pedido:", error.data)
 
-    // Se o erro for de validação de distância (403) ou endereço não encontrado (400),
-    // exibe a mensagem específica vinda do backend.
-    if (error.statusCode === 403 || error.statusCode === 400) {
-      return alert(error.data.message)
+      // Se o erro for de validação de distância (403) ou endereço não encontrado (400),
+      // exibe a mensagem específica vinda do backend.
+      if ((error.statusCode === 403 || error.statusCode === 400) && error.data?.message) {
+        return alert(error.data.message)
+      }
+    } else {
+      console.error("Erro inesperado:", error)
     }
 
-    // Para outros erros, exibe uma mensagem genérica.
-    return alert('Ocorreu um erro inesperado ao processar seu pedido. Por favor, tente novamente.')
-  }
+  // Para outros erros, exibe uma mensagem genérica.
+  return alert('Ocorreu um erro inesperado ao processar seu pedido. Por favor, tente novamente.')
+}
 
   // 2. Se o pedido foi salvo com sucesso, monta a Mensagem do WhatsApp
   let msg = `*PEDIDO - ${props.brand.name}*%0A`
