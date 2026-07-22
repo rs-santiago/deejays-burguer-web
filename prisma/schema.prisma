@@ -33,6 +33,9 @@ model Brand {
   colorPrimary      String
   colorPrimaryHover String
   colorBg           String
+  deliveryRadius    Float?   // Ou Float @default(10)
+  latitude          Float?
+  longitude         Float?
   categories        Category[]
   products          Product[]
   users             UserBrandAccess[]
