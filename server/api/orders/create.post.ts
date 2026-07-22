@@ -4,12 +4,8 @@ import { geocodeAddress } from '~/server/utils/geocode'
 
 const prisma = new PrismaClient()
 
-/**
- * Função para calcular a distância entre duas coordenadas (Fórmula de Haversine)
- * @returns Distância em quilômetros (km)
- */
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371 // Raio da Terra em km
+  const R = 6371
   const dLat = deg2rad(lat2 - lat1)
   const dLon = deg2rad(lon2 - lon1)
   const a =
@@ -17,8 +13,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const distance = R * c // Distância em km
-  return distance
+  return R * c
 }
 
 function deg2rad(deg: number) {
@@ -27,49 +22,86 @@ function deg2rad(deg: number) {
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { brandId, customerAddress, items, ...customerData } = body
+  const { brandId, customerAddress, items, deliveryMethod, customerName, customerPhone, paymentMethod, total } = body
 
-  if (!brandId || !customerAddress || !items || items.length === 0) {
+  if (!brandId || !items || items.length === 0) {
     throw createError({ statusCode: 400, message: 'Dados do pedido incompletos.' })
   }
 
-  // 1. Buscar dados da loja, incluindo o raio de entrega e coordenadas
+  // 1. Buscar dados da loja
   const brand = await prisma.brand.findUnique({
     where: { id: brandId },
     select: { deliveryRadius: true, latitude: true, longitude: true }
   })
 
-  if (!brand || !brand.latitude || !brand.longitude || !brand.deliveryRadius) {
-    throw createError({ statusCode: 404, message: 'Loja não encontrada ou não configurada para delivery.' })
+  if (!brand) {
+    throw createError({ statusCode: 404, message: 'Loja não encontrada.' })
   }
 
-  // 2. Converter endereço do cliente em coordenadas
-  const customerCoords = await geocodeAddress(customerAddress)
+  // 2. Validação de Raio de Entrega APENAS se for entrega
+  const isDelivery = deliveryMethod === 'delivery';
 
-  if (!customerCoords) {
-    throw createError({ statusCode: 400, message: 'Não foi possível localizar o endereço de entrega. Verifique se está correto.' })
+  if (isDelivery) {
+    if (!customerAddress) {
+      throw createError({ statusCode: 400, message: 'Endereço de entrega é obrigatório.' })
+    }
+
+    // Se a loja tiver coordenadas e raio cadastrado, faz a validação
+    if (brand.latitude && brand.longitude && brand.deliveryRadius) {
+      const customerCoords = await geocodeAddress(customerAddress)
+
+      if (!customerCoords) {
+        throw createError({ statusCode: 400, message: 'Não foi possível localizar o endereço de entrega. Verifique se está correto.' })
+      }
+
+      const distance = getDistance(
+        brand.latitude,
+        brand.longitude,
+        customerCoords.lat,
+        customerCoords.lng
+      )
+
+      if (distance > brand.deliveryRadius) {
+        throw createError({
+          statusCode: 403,
+          message: `Desculpe, este estabelecimento entrega apenas em um raio de ${brand.deliveryRadius} km. Você está a aproximadamente ${distance.toFixed(1)} km.`
+        })
+      }
+    }
   }
 
-  // 3. Calcular a distância
-  const distance = getDistance(
-    brand.latitude,
-    brand.longitude,
-    customerCoords.lat,
-    customerCoords.lng
-  )
+  // 3. Salvar no Banco de Dados via Prisma (com upsert do cliente)
+  const cleanPhone = customerPhone ? customerPhone.replace(/\D/g, '') : '';
 
-  // 4. Validar se o cliente está dentro do raio de entrega
-  if (distance > brand.deliveryRadius) {
+  try {
+    const customer = await prisma.customer.upsert({
+      where: { phone: cleanPhone },
+      update: { name: customerName },
+      create: {
+        phone: cleanPhone,
+        name: customerName || 'Cliente'
+      },
+    })
+
+    const newOrder = await prisma.order.create({
+      data: {
+        total: Number(total),
+        items: items,
+        brandId: brandId,
+        customerPhone: customer.phone,
+        customerName: customer.name,
+        address: customerAddress || null,
+        deliveryMethod: deliveryMethod,
+        paymentMethod: paymentMethod,
+      }
+    })
+
+    return { success: true, orderId: newOrder.id }
+  } catch (error) {
+    console.error("Erro ao salvar pedido:", error)
     throw createError({
-      statusCode: 403, // Forbidden
-      message: `Desculpe, este estabelecimento entrega apenas em um raio de ${brand.deliveryRadius} km. Você está a aproximadamente ${distance.toFixed(1)} km.`
+      statusCode: 500,
+      message: 'Erro interno ao processar o pedido no banco.'
     })
   }
-
-  // 5. Se a distância for OK, prossiga com a criação do pedido
-  // ...aqui você colocaria sua lógica para salvar o pedido no banco de dados...
-  // const newOrder = await prisma.order.create({ data: { ... } })
-
-  // Retorno de sucesso (simulado)
-  return { success: true, message: 'Pedido criado com sucesso!', distance: `${distance.toFixed(1)} km` }
 })
