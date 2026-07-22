@@ -25,7 +25,7 @@
               <div class="flex flex-col flex-1 pr-4">
                 <span class="text-white font-bold text-sm">{{ item.quantity }}x {{ item.name }}</span>
                 <!-- Exibe a observação se existir -->
-                <span v-if="item.observation" class="receipt-observation">
+                <span v-if="item.observation" class="text-amber-500/80 text-[11px] italic font-sans mt-1 leading-tight">
                   Obs: {{ item.observation }}
                 </span>
                 <span class="text-neutral-500 text-[10px] uppercase mt-1">
@@ -124,7 +124,6 @@ import { ref } from 'vue'
 import { useCartStore } from '~/stores/cart' // Ajuste o caminho se necessário
 import { FetchError } from 'ofetch'
 
-
 const props = defineProps({
   brand: Object,
   isStoreOpen: {
@@ -189,10 +188,9 @@ const sendOrder = async () => {
     } else {
       console.error("Erro inesperado:", error)
     }
-
-  // Para outros erros, exibe uma mensagem genérica.
-  return alert('Ocorreu um erro inesperado ao processar seu pedido. Por favor, tente novamente.')
-}
+    // Para outros erros, exibe uma mensagem genérica.
+    return alert('Ocorreu um erro inesperado ao processar seu pedido. Por favor, tente novamente.')
+  }
 
   // 2. Se o pedido foi salvo com sucesso, monta a Mensagem do WhatsApp
   let msg = `*PEDIDO - ${props.brand.name}*%0A`
@@ -246,49 +244,5 @@ const sendOrder = async () => {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 10px;
-}
-
-@media print {
-  /* 1. Zera todas as margens da página do navegador */
-  @page {
-    size: 72mm auto; /* Força a largura para 72mm */
-    margin: 0 !important;
-  }
-
-  html, body {
-    width: 72mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    color: #000 !important;
-    font-family: monospace, 'Courier New', sans-serif; /* Fontes monospace alinham melhor em térmicas */
-  }
-
-  /* 2. Container Principal ocupa 100% da largura útil */
-  .receipt-container {
-    width: 100% !important;
-    max-width: 72mm !important;
-    padding: 4px 0 !important; /* Mínimo recuo interno */
-    margin: 0 !important;
-    box-sizing: border-box;
-  }
-}
-
-/* --- ESTILOS VISUAIS DO CUPOM --- */
-
-/* Observação bem destacada em caixa preta com texto branco ou negrito grande */
-.receipt-observation {
-  display: block;
-  font-size: 14px !important;
-  font-weight: 900 !important;
-  text-transform: uppercase;
-  background-color: #000 !important;
-  color: #fff !important;
-  padding: 3px 6px !important;
-  margin-top: 4px !important;
-  margin-bottom: 6px !important;
-  border-radius: 4px;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
 }
 </style>
