@@ -123,6 +123,7 @@ model Product {
   description String?
   price       Float
   image       String?
+  sortOrder   Int      @default(0)
   isAvailable Boolean  @default(true)
   brandId     String
   categoryId  String

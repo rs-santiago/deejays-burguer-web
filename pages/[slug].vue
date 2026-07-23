@@ -114,13 +114,28 @@ const [{ data: products, pending: productsPending }, { data: categoriesData, pen
 const pending = computed(() => productsPending.value || catsPending.value)
 
 // AGRUPAMENTO DE PRODUTOS POR CATEGORIA
+// AGRUPAMENTO E ORDENAÇÃO DE PRODUTOS E CATEGORIAS
 const menuByCategories = computed(() => {
   if (!products.value || !categoriesData.value) return []
+
+  // 1. Filtra categorias ativas e no horário
   const activeCats = categoriesData.value.filter(c => c.isActive && isCategoryOpen(c.activeTime))
-  return activeCats.map(cat => ({
-    ...cat,
-    products: products.value.filter(p => p.categoryId === cat.id)
-  })).filter(cat => cat.products.length > 0)
+
+  // 2. Ordena as categorias pelo sortOrder (ascendente)
+  const sortedCats = [...activeCats].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+  return sortedCats.map(cat => {
+    // 3. Filtra os produtos da categoria
+    const catProducts = products.value.filter(p => p.categoryId === cat.id)
+
+    // 4. Ordena os produtos pelo sortOrder (ascendente)
+    const sortedProducts = [...catProducts].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+    return {
+      ...cat,
+      products: sortedProducts
+    }
+  }).filter(cat => cat.products.length > 0)
 })
 
 onUnmounted(() => {

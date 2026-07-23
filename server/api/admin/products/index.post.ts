@@ -3,22 +3,18 @@ export default defineEventHandler(async (event) => {
   const user = requireRole(event, ['ADMIN', 'SUPER_ADMIN'])
   const body = await readBody(event)
 
-  const { name, description, price, categoryId, brandId, image } = body
+  const { name, description, price, categoryId, brandId, image, sortOrder } = body
 
   let finalBrandId: string | undefined
 
   if (user.role === 'SUPER_ADMIN') {
-    // SUPER_ADMIN pode usar qualquer brandId enviado no body
     finalBrandId = brandId
   } else {
-    // ADMIN comum: verifica se o brandId enviado no body está entre os brandIds do token dele,
-    // ou usa o primeiro da lista caso não venha no body
     const allowedBrandIds: string[] = user.brandIds || []
-
     if (brandId && allowedBrandIds.includes(brandId)) {
       finalBrandId = brandId
     } else {
-      finalBrandId = allowedBrandIds[0] // Pega a primeira marca vinculada
+      finalBrandId = allowedBrandIds[0]
     }
   }
 
@@ -35,6 +31,7 @@ export default defineEventHandler(async (event) => {
       description,
       price: parseFloat(price),
       image: image || "",
+      sortOrder: sortOrder !== undefined ? Number(sortOrder) : 0, // <-- AQUI
       isAvailable: true,
       categoryId,
       brandId: finalBrandId
